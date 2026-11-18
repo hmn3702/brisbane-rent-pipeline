@@ -15,6 +15,11 @@ models:
         description: >
           'All dwellings' rows only. Per-dwelling gap_pct weighted by RTA new bonds, so a suburb's headline
           gap is not distorted by Domain listing a different mix of dwellings than RTA records.
+        data_tests:
+          - value_between:          # a warning: a suburb asking 2x what tenants sign is possible, but worth a look
+              arguments: {min_value: -50, max_value: 100}
+              config:
+                severity: warn
       - name: rta_quarters_behind
         description: Quarters between the Domain quarter and the RTA quarter it is compared with.
       - name: is_low_sample
@@ -26,13 +31,24 @@ models:
       - name: area_name
         data_tests: [not_null]
       - name: median_weekly_rent
-        data_tests: [not_null]
+        data_tests:
+          - not_null
+          - value_between:
+              arguments: {min_value: 30, max_value: 5000}
 
   - name: mart_listing_velocity_suburb_month
     description: Leasing speed per tracked suburb and month (based on listings that left the market).
     columns:
       - name: n_listings_closed
         data_tests: [not_null]
+      - name: pct_with_price_cut
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 100}
+      - name: median_days_on_market
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0}
 
   - name: mart_rta_suburb_trend
     description: >

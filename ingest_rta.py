@@ -247,12 +247,45 @@ def already_loaded(dsn: str, sha: str, geo: list[str] | None) -> bool:
     return bool(row) and row[0] == sha and row[1] == (sorted(geo) if geo else None)
 
 
+class AuditError(RuntimeError):
+    """The new workbook looks worse than what is already loaded; the load was refused."""
+
+
+def audit_against_current(cur, records: list[Record], min_ratio: float = 0.9) -> None:
+    """Compare the new records with the rows already in raw.rta_bond_stats, per geo level.
+
+    Raises AuditError if a level would lose more than (1 - min_ratio) of its rows, or if its latest
+    quarter would move backwards. Levels not in the new records are ignored: dropping a level on
+    purpose (--geo) is not a regression.
+    """
+    new: dict[str, tuple[int, date]] = {}
+    for r in records:
+        n, latest = new.get(r.geo_level, (0, r.quarter_end))
+        new[r.geo_level] = (n + 1, max(latest, r.quarter_end))
+    current = {level: (n, latest) for level, n, latest in cur.execute(
+        "SELECT geo_level, count(*), max(quarter_end) FROM raw.rta_bond_stats "
+        "WHERE geo_level = ANY(%s) GROUP BY geo_level", (list(new),)).fetchall()}
+
+    problems = []
+    for level, (n_old, latest_old) in sorted(current.items()):
+        n_new, latest_new = new[level]
+        if n_new < min_ratio * n_old:
+            problems.append(f"{level}: {n_new:,} rows vs {n_old:,} loaded now ({n_new / n_old:.0%})")
+        if latest_new < latest_old:
+            problems.append(f"{level}: latest quarter {latest_new} is older than the loaded {latest_old}")
+    if problems:
+        raise AuditError("refusing to replace raw.rta_bond_stats (use --force to override): "
+                         + "; ".join(problems))
+
+
 def load_to_postgres(dsn: str, records: list[Record], source_file: str,
-                     sha: str | None = None, geo: list[str] | None = None) -> int:
+                     sha: str | None = None, geo: list[str] | None = None, force: bool = False) -> int:
     import psycopg
 
     cols = COLUMNS + ["source_file"]
     with psycopg.connect(dsn) as conn, conn.cursor() as cur:
+        if not force:
+            audit_against_current(cur, records)   # before the truncate: a refused load changes nothing
         cur.execute("TRUNCATE raw.rta_bond_stats")
         with cur.copy(f"COPY raw.rta_bond_stats ({', '.join(cols)}) FROM STDIN") as cp:
             for r in records:
@@ -275,6 +308,9 @@ def main(argv: list[str] | None = None) -> int:
                                       "default all. The dbt models only use suburb and state.")
     parser.add_argument("--if-changed", action="store_true",
                         help="skip the database load if this exact workbook (and --geo) was already loaded")
+    parser.add_argument("--force", action="store_true",
+                        help="load even if the workbook has far fewer rows or an older latest quarter "
+                             "than what is loaded now")
     args = parser.parse_args(argv)
     geo = [g.strip() for g in args.geo.split(",")] if args.geo else None
     if geo and not set(geo) <= {"postcode", "suburb", "lga", "state"}:
@@ -307,7 +343,11 @@ def main(argv: list[str] | None = None) -> int:
         write_csv(records, args.csv_out)
         log.info("wrote %s", args.csv_out)
     if not args.skip_db:
-        n = load_to_postgres(database_url(), records, args.file.name, sha=sha, geo=geo)
+        try:
+            n = load_to_postgres(database_url(), records, args.file.name, sha=sha, geo=geo, force=args.force)
+        except AuditError as e:
+            log.error("%s", e)
+            return 3
         log.info("loaded %d rows into raw.rta_bond_stats", n)
     return 0
 

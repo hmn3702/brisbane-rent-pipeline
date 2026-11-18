@@ -44,8 +44,8 @@ case "$MODE" in
     ;;
 esac
 
-echo "==> dbt build"
-(cd dbt && dbt build --profiles-dir . --fail-fast)
+echo "==> dbt build: write-audit-publish (tables readers use change only if every test passes)"
+bash scripts/dbt_wap.sh
 
 echo "==> export marts for Power BI"
 python scripts/export_marts.py

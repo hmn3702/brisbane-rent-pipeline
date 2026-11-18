@@ -56,8 +56,8 @@ flowchart LR
 |---|---|
 | Ingestion | Python (requests, openpyxl), OAuth client credentials, retries, idempotent upserts |
 | Storage | PostgreSQL (hosted on Neon's free tier): raw JSONB snapshots, a long-format RTA table (~518k suburb and state rows), and an ingest log |
-| Transformation | dbt Core: 3 layers, 10 models, 28 data tests |
-| Testing | 12 pytest tests (API mocked, real-workbook checks) and 28 dbt schema and singular tests |
+| Transformation | dbt Core: 3 layers, 10 models, 39 data tests, write-audit-publish |
+| Testing | 13 pytest tests (API mocked, real-workbook checks) and 39 dbt tests: schema, range, volume and singular |
 | BI | Power BI Project (TMDL semantic model + PBIR report), generated from `powerbi/build_pbip.py` |
 | CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres, plus the same run through `docker compose` |
 | Local run | Docker Compose (Postgres 16 + a Python/dbt image) and a Makefile: `make demo` runs everything |
@@ -108,6 +108,25 @@ housing) swung wildly. They are flagged as outliers and excluded, rather than wi
 `mart_rta_seasonality` reports the mean deviation per quarter with a t-statistic, and only calls a quarter
 significant with 5+ years of data and |t| ≥ 2.
 
+**8. Bad data stops before the dashboard (write-audit-publish).**
+A plain `dbt build` replaces each mart table as soon as it is built, and only then tests it. When a test
+failed, the hosted database already held the untested tables. Now every layer is built into `*__audit`
+schemas, all 39 tests run there, and only if they all pass does one atomic statement swap the audit schemas
+in (`dbt/macros/wap.sql`). Readers see the whole old set of tables or the whole new set, never a mix.
+The raw RTA load is guarded the same way: a workbook that would lose more than 10% of a level's rows, or
+move its latest quarter backwards, is refused before the truncate.
+
+The range tests block *impossible* values, not *unusual* ones. Thresholds come from the real data:
+- Median rents outside $30–$5,000 a week (real: $60–$2,600) fail.
+- Queensland's all-dwellings median moving more than 15% in a quarter (real: −3.8% to +7.8% since 2012) fails.
+  That catches a shifted column in the workbook.
+- The latest quarter must cover at least 90% as many suburbs as the one before (real: 651 vs 659).
+- Suburb year-on-year change has no threshold: small suburbs really do swing from −83% to +617%.
+
+CI proves the mechanism (`scripts/check_wap.sh`): it multiplies one Queensland median by 10, checks that two
+tests fail and that the published marts are byte-for-byte unchanged, then restores the value and checks that a
+clean run publishes again.
+
 ## Dashboard
 
 | | |
@@ -144,6 +163,7 @@ Only Docker is needed. On synthetic data, with no downloads and no API keys:
 ```bash
 make demo     # Postgres + schemas + RTA parser + synthetic listings + dbt build + CSV export
 make test     # pytest, database tests on a separate rent_test database
+make wap-check  # corrupt one value, check it is not published (run after make demo)
 make docs     # dbt docs and lineage graph on http://localhost:8080
 ```
 

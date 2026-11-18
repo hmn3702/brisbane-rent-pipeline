@@ -11,6 +11,7 @@ Needs Docker Desktop (or Docker Engine with Compose v2). `make help` lists every
 | `make demo` | Starts Postgres 16, applies `sql/0*.sql`, builds a synthetic RTA workbook once and loads it through the real parser, adds synthetic Domain listings, runs `dbt build`, exports the marts to `powerbi/data/` |
 | `make real` | Same, but loads `data/raw/rta/rta-bond-statistics.xlsx` (or `RTA_FILE=...`), and calls the Domain API when keys are in `.env` |
 | `make test` | pytest; the database tests use a separate `rent_test` database, created by `docker/initdb/` |
+| `make wap-check` | After `make demo`: corrupts one value, checks the build is refused and the published marts are unchanged |
 | `make docs` | dbt docs and lineage graph on http://localhost:8080 |
 | `make psql` | psql inside the database container |
 | `make down` / `make clean` | Stop the containers / also delete the database volume |
@@ -102,7 +103,7 @@ Run:
 
     cd dbt
     cp profiles.yml.example profiles.yml        # reads PGHOST/PGUSER/PGPASSWORD/PGDATABASE
-    dbt build --profiles-dir .                  # seed + 10 models + 28 tests
+    dbt build --profiles-dir .                  # seed + 10 models + 39 tests (straight into the real schemas; fine for development)
     dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .   # lineage graph
 
 Notes:
@@ -122,6 +123,23 @@ four report pages, and a table of expected values to check every measure against
 The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same rule, and a dbt test
 (`assert_mix_adjusted_gap_matches_dax_rule`) keeps them in sync.
 
+## Data quality: write-audit-publish
+
+`scripts/dbt_wap.sh` is how the pipeline runs dbt (locally, in Docker and on the schedule):
+
+1. `dbt run-operation wap_prepare` drops `*__audit` schemas left by an earlier failed run.
+2. `dbt build --vars '{wap_suffix: __audit}'` builds and tests every layer in `ref__audit`, `staging__audit`,
+   `intermediate__audit` and `marts__audit`.
+3. Only if step 2 passes, `dbt run-operation wap_publish` swaps them in with one atomic `DO` block.
+
+**When a run fails:** the published schemas are untouched and the dashboard keeps yesterday's data. The
+`*__audit` schemas stay behind, so you can query the failing rows, e.g.
+`select * from marts__audit.mart_rta_suburb_latest`. Fix the cause and re-run; the next run cleans up.
+
+**When the RTA load is refused** (`ingest_rta.py` exits with code 3, "refusing to replace raw.rta_bond_stats"):
+the new workbook has >10% fewer rows for a geo level, or an older latest quarter, than what is loaded. Check
+the file. If the change is intended (RTA restructured the workbook), re-run with `--force`.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push and pull request. It has two jobs.
@@ -134,12 +152,14 @@ The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same r
    duplicate suburb name. `ingest_rta.py` loads it twice; the second run must skip it as unchanged.
    CI never depends on the RTA website.
 3. `generate_fake_domain.py` adds synthetic listings.
-4. `dbt build --fail-fast`: the seed, 10 models and 28 tests.
-5. `export_marts.py` as a smoke test.
-6. `dbt build` again with the Domain table empty (the state before API access).
+4. `scripts/dbt_wap.sh --fail-fast`: the seed, 10 models and 39 tests, built in `*__audit` schemas and published
+   only if all pass.
+5. `scripts/check_wap.sh`: corrupts one value and checks that the build is refused and the published marts are unchanged.
+6. `export_marts.py` as a smoke test.
+7. `dbt build` again with the Domain table empty (the state before API access).
 
 **`docker`** runs the Quick start commands for real: `make build`, `make demo` twice (the second must skip
-the unchanged workbook), `make test`, and checks that the CSVs were exported.
+the unchanged workbook), `make test`, `make wap-check`, and checks that the CSVs were exported.
 
 ## Hosted run (Neon + the scheduled pipeline)
 

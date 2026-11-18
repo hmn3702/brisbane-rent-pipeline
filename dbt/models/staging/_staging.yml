@@ -18,6 +18,9 @@ models:
                 values: ['Flat', 'House', 'Townhouse', 'Other']
       - name: weekly_rent_asking
         description: Asking rent in $/week; null when the price is hidden ("Contact agent") or unparseable.
+        data_tests:
+          - value_between:          # the parser's own clamp; fails if it ever stops applying
+              arguments: {min_value: 80, max_value: 10000}
 
   - name: stg_rta__bond_stats
     description: RTA median rents, new bonds and bonds held by postcode / suburb / LGA / state, long format.
@@ -33,4 +36,15 @@ models:
               arguments:
                 values: ['median_rent', 'new_bonds', 'bonds_held']
       - name: value
-        data_tests: [not_null]
+        data_tests:
+          - not_null
+          - value_between:          # real data: $60-$2,600; outside $30-$5,000 is a parsing error
+              name: rta_median_rent_in_range
+              arguments: {min_value: 30, max_value: 5000}
+              config:
+                where: "measure = 'median_rent'"
+          - value_between:
+              name: rta_bond_counts_not_negative
+              arguments: {min_value: 0}
+              config:
+                where: "measure <> 'median_rent'"

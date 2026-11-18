@@ -11,6 +11,9 @@ models:
         data_tests: [unique, not_null]
       - name: days_on_market
         description: Null while the listing is still active or when left-censored.
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0}
       - name: rta_dwelling
         description: >
           RTA dwelling category ('Flat 2', 'House 4' ...). Bedrooms are clamped into RTA's buckets

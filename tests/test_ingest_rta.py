@@ -150,3 +150,33 @@ def test_geo_filter_and_if_changed(workbook, monkeypatch):
     assert rta.main(["--file", str(workbook), "--if-changed"]) == 0   # different geo -> reloads
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT count(*) FROM raw.ingest_log WHERE source = 'rta'").fetchone()[0] == 2
+
+
+@pytest.mark.skipif(not os.getenv("TEST_DATABASE_URL"), reason="needs TEST_DATABASE_URL")
+def test_audit_refuses_shrinking_or_older_workbook(workbook):
+    """A load that loses >10% of a level's rows, or moves its latest quarter back, is refused
+    before the truncate, so the table keeps its current contents. --force overrides."""
+    import psycopg
+
+    dsn = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(dsn) as conn:
+        conn.execute(open(rta.ROOT / "sql" / "002_rta_schema.sql").read())
+    recs = rta.parse_workbook(workbook)
+    rta.load_to_postgres(dsn, recs, "full.xlsx", force=True)
+
+    def count():
+        with psycopg.connect(dsn) as conn:
+            return conn.execute("SELECT count(*) FROM raw.rta_bond_stats").fetchone()[0]
+
+    latest = max(r.quarter_end for r in recs)
+    older = [r for r in recs if r.quarter_end < latest]          # last quarter missing
+    half = [r for i, r in enumerate(recs) if r.geo_level != "postcode" or i % 2]   # postcode level halved
+
+    for bad, why in ((older, "older than the loaded"), (half, "postcode:")):
+        with pytest.raises(rta.AuditError, match=why):
+            rta.load_to_postgres(dsn, bad, "bad.xlsx")
+        assert count() == len(recs)                              # nothing changed
+
+    only_state = [r for r in recs if r.geo_level == "state"]     # dropping levels on purpose is fine
+    assert rta.load_to_postgres(dsn, only_state, "state.xlsx") == len(only_state)
+    assert rta.load_to_postgres(dsn, older, "forced.xlsx", force=True) == len(older)

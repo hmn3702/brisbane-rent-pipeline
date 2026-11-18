@@ -65,11 +65,8 @@ jobs:
           DOMAIN_CLIENT_SECRET: ${{ secrets.DOMAIN_CLIENT_SECRET }}
         run: python ingest_domain.py
 
-      - name: dbt build (models + tests)
-        working-directory: dbt
-        run: |
-          cp profiles.yml.example profiles.yml
-          dbt build --profiles-dir .
+      - name: dbt build, write-audit-publish (marts change only if every test passes)
+        run: bash scripts/dbt_wap.sh
 
       - name: Export marts for Power BI
         run: python scripts/export_marts.py

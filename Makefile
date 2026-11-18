@@ -5,7 +5,7 @@ COMPOSE ?= docker compose
 RUN      = $(COMPOSE) run --rm app
 
 .DEFAULT_GOAL := help
-.PHONY: help build up demo real test dbt-test docs pbip psql logs down clean
+.PHONY: help build up demo real test wap-check dbt-test docs pbip psql logs down clean
 
 help:  ## list targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -24,6 +24,9 @@ real: up  ## full pipeline on the real RTA workbook in data/raw/rta/ (+ Domain i
 
 test: up  ## pytest, with the database tests run against a separate rent_test database
 	$(COMPOSE) run --rm -e TEST_DATABASE_URL=postgresql://rent:rent@db:5432/rent_test app pytest -q
+
+wap-check: up  ## prove write-audit-publish: a corrupted load fails and the published marts stay unchanged (after demo)
+	$(RUN) bash scripts/check_wap.sh
 
 dbt-test: up  ## dbt tests only (after demo or real)
 	$(RUN) bash -c "cd dbt && dbt test --profiles-dir ."

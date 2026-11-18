@@ -62,20 +62,19 @@ jobs:
       - name: Load synthetic Domain listings
         run: python scripts/generate_fake_domain.py --start 2026-07-01 --end 2026-11-18 --truncate
 
-      - name: dbt build (seed, models, tests)
-        working-directory: dbt
-        run: |
-          cp profiles.yml.example profiles.yml
-          dbt build --profiles-dir . --fail-fast
+      - name: dbt build, write-audit-publish (seed, models, tests)
+        run: bash scripts/dbt_wap.sh --fail-fast
+
+      - name: Write-audit-publish rejects a corrupted load
+        run: bash scripts/check_wap.sh
 
       - name: Export marts (smoke test)
         run: python scripts/export_marts.py
 
       - name: dbt build with no Domain data (state before API access)
-        working-directory: dbt
         run: |
           psql "$DATABASE_URL" -c "TRUNCATE raw.domain_rent_listings"
-          dbt build --profiles-dir . --fail-fast
+          bash scripts/dbt_wap.sh --fail-fast
 
   docker:
     name: docker compose (make demo + make test)
@@ -95,6 +94,9 @@ jobs:
 
       - name: make test (pytest against rent_test)
         run: make test
+
+      - name: make wap-check (corrupted load is not published)
+        run: make wap-check
 
       - name: Exported CSVs exist
         run: |
