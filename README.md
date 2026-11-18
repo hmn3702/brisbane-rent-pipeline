@@ -52,6 +52,11 @@ flowchart LR
     G -.-> S
 ```
 
+The dbt lineage, from `make docs`. Green nodes are the raw tables. `suburbs` is the seed (`config/suburbs.csv`) that maps
+Domain suburb names to RTA names. The 39 tests are hidden for readability.
+
+![dbt lineage graph](docs/img/dbt_lineage.png)
+
 | Layer | Tools |
 |---|---|
 | Ingestion | Python (requests, openpyxl), OAuth client credentials, retries, idempotent upserts |
