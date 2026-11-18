@@ -313,7 +313,7 @@ table _Measures
 		lineageTag: 68bc816d-5653-5da5-aa9a-6e949ef632c8
 
 	/// Warns when Domain listings are synthetic.
-	measure 'Data Banner' = IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" )
+	measure 'Data Banner' = IF ( COUNTROWS ( Gap ) = 0, "RTA data only · Domain listings pending API access", IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" ) )
 		displayFolder: Labels
 		lineageTag: ad486346-836c-5daf-853a-c2f62acd768c
 

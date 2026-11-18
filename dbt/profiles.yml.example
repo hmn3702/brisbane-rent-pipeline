@@ -10,4 +10,5 @@ rent_dbt:
       password: "{{ env_var('PGPASSWORD') }}"
       dbname: "{{ env_var('PGDATABASE', 'rent') }}"
       schema: analytics
+      sslmode: "{{ env_var('PGSSLMODE', 'prefer') }}"   # hosted Postgres (e.g. Neon) needs 'require'
       threads: 4

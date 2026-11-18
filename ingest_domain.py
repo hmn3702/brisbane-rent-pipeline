@@ -170,6 +170,11 @@ def load_to_postgres(dsn: str, snapshot: date, rows: list[tuple[dict, str, str]]
             UPSERT_SQL,
             [(l["id"], snapshot, sub, pc, Jsonb(l)) for l, sub, pc in rows],
         )
+        if cur.execute("SELECT to_regclass('raw.ingest_log')").fetchone()[0] is not None:
+            cur.execute(
+                "INSERT INTO raw.ingest_log (source, rows_loaded, detail) VALUES ('domain', %s, %s)",
+                (len(rows), Jsonb({"snapshot_date": snapshot.isoformat(),
+                                   "suburbs": len({sub for _, sub, _ in rows})})))
         conn.commit()
     return len(rows)
 

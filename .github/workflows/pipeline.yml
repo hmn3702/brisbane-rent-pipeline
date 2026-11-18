@@ -1,0 +1,96 @@
+name: pipeline
+# The whole pipeline, end to end, against the hosted database:
+#   RTA workbook (reloaded only when it changes) -> Domain snapshot (when API keys exist)
+#   -> dbt build -> mart export (artifact) -> database size check.
+on:
+  schedule:
+    - cron: "17 20 * * *"   # 06:17 Brisbane (UTC+10), daily
+  workflow_dispatch: {}
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  check-config:
+    # Skip cleanly (instead of failing every day) until the database secret exists.
+    runs-on: ubuntu-latest
+    outputs:
+      db_ready: ${{ steps.check.outputs.db_ready }}
+      domain_ready: ${{ steps.check.outputs.domain_ready }}
+    steps:
+      - id: check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DOMAIN_CLIENT_ID: ${{ secrets.DOMAIN_CLIENT_ID }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then echo "db_ready=true" >> "$GITHUB_OUTPUT"
+          else echo "db_ready=false" >> "$GITHUB_OUTPUT"; echo "::notice::DATABASE_URL secret not set; skipping the pipeline."; fi
+          if [ -n "$DOMAIN_CLIENT_ID" ]; then echo "domain_ready=true" >> "$GITHUB_OUTPUT"
+          else echo "domain_ready=false" >> "$GITHUB_OUTPUT"; fi
+
+  run:
+    needs: check-config
+    if: needs.check-config.outputs.db_ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SIZE_WARN_MB: "800"   # Neon free plan: 1 GB per project
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Connection settings for dbt (password masked)
+        run: python scripts/pg_env_from_url.py
+
+      - name: Create or update raw schemas (idempotent)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f sql/001_raw_schema.sql -f sql/002_rta_schema.sql -f sql/003_ingest_log.sql
+
+      - name: RTA bond statistics (reload only if the workbook changed)
+        run: python ingest_rta.py --download --geo suburb,state --if-changed
+
+      - name: Domain rental listings snapshot
+        if: needs.check-config.outputs.domain_ready == 'true'
+        env:
+          DOMAIN_CLIENT_ID: ${{ secrets.DOMAIN_CLIENT_ID }}
+          DOMAIN_CLIENT_SECRET: ${{ secrets.DOMAIN_CLIENT_SECRET }}
+        run: python ingest_domain.py
+
+      - name: dbt build (models + tests)
+        working-directory: dbt
+        run: |
+          cp profiles.yml.example profiles.yml
+          dbt build --profiles-dir .
+
+      - name: Export marts for Power BI
+        run: python scripts/export_marts.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: powerbi-data
+          path: powerbi/data/
+          retention-days: 30
+
+      - name: Database size and run summary
+        run: |
+          SIZE_MB=$(psql "$DATABASE_URL" -tAc "SELECT pg_database_size(current_database()) / 1024 / 1024")
+          {
+            echo "### Pipeline run"
+            echo "Database size: **${SIZE_MB} MB** (warning at ${SIZE_WARN_MB} MB)"
+            echo
+            echo "| source | loaded at (UTC) | rows |"
+            echo "|---|---|---|"
+            psql "$DATABASE_URL" -tA -F ' | ' -c "SELECT source, to_char(loaded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI'), rows_loaded FROM raw.ingest_log ORDER BY loaded_at DESC LIMIT 5" | sed 's/^/| /; s/$/ |/'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$SIZE_MB" -gt "$SIZE_WARN_MB" ]; then
+            echo "::warning::Database is ${SIZE_MB} MB, above ${SIZE_WARN_MB} MB. Trim old Domain snapshots or upgrade the plan."
+          fi

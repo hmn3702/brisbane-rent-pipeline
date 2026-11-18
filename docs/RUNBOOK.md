@@ -116,3 +116,40 @@ To reproduce CI locally, run the same commands against any empty Postgres databa
 The scheduled `daily_ingest` and `quarterly_rta` workflows first check that the repository secrets
 (`DATABASE_URL`, and `DOMAIN_CLIENT_ID` for the daily job) exist. Until they do, the jobs skip with a
 notice instead of failing.
+
+## Hosted run (Neon + the scheduled pipeline)
+
+`.github/workflows/pipeline.yml` runs daily at 06:17 Brisbane time, and on demand from the Actions tab
+(**Run workflow**). It replaces the earlier separate daily and quarterly jobs.
+
+| Step | What it does |
+|---|---|
+| Schemas | Applies `sql/001`–`003`. Idempotent, so it is safe to run every day |
+| RTA | `ingest_rta.py --download --geo suburb,state --if-changed`: downloads the workbook, and loads it only if its SHA-256 differs from the last load in `raw.ingest_log`. Only the suburb and state levels are kept, because the dbt models use nothing else (~118 MB instead of ~206 MB) |
+| Domain | `ingest_domain.py`, only when the `DOMAIN_CLIENT_ID` secret exists |
+| dbt | `dbt build` (models + tests) |
+| Export | Marts → CSV, uploaded as the `powerbi-data` artifact (kept 30 days) |
+| Size check | Writes the database size and recent loads to the run summary, and warns above 800 MB |
+
+**Why Neon:** the free plan gives 1 GB of storage per project and scales to zero when idle. Supabase's free
+plan (500 MB, paused after a week of inactivity) is too small: the database is ~175 MB with RTA data alone.
+
+### Set-up (once)
+
+1. Create a free project at neon.tech (Postgres 16, region closest to you: AWS Sydney if offered).
+2. Copy the **direct** connection string (not the `-pooler` one). It looks like
+   `postgresql://user:password@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require`.
+3. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**, name it `DATABASE_URL`,
+   and paste the connection string.
+4. Optional, once Domain approves API access: add `DOMAIN_CLIENT_ID` and `DOMAIN_CLIENT_SECRET` the same way.
+5. **Actions → pipeline → Run workflow.** The first run downloads and loads RTA data (~1–2 minutes).
+
+`scripts/pg_env_from_url.py` turns `DATABASE_URL` into the `PG*` variables that dbt reads, and masks the
+password in the logs. Power BI can connect to the same database (Get data → PostgreSQL, using the host and
+database from the connection string), or use the CSV artifact.
+
+### Storage budget
+
+Domain snapshots grow every day: about 1–2 MB a day for 15 suburbs, depending on payload size
+[an estimate until real responses arrive]. Watch the size line in each run's summary. If it nears the
+limit, trim snapshots older than a year, or store only the fields the models use.

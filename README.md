@@ -38,19 +38,20 @@ flowchart LR
     S --> I[dbt intermediate<br/>listing lifecycle,<br/>suburb x quarter]
     I --> M[dbt marts<br/>rent gap, league table,<br/>trend, leasing speed]
     M -->|export_marts.py| P[Power BI<br/>PBIP: TMDL + PBIR]
-    G[GitHub Actions<br/>daily / quarterly] -.schedules.-> A
+    G[GitHub Actions<br/>daily pipeline] -.schedules.-> A
     G -.-> B
+    G -.-> S
 ```
 
 | Layer | Tools |
 |---|---|
 | Ingestion | Python (requests, openpyxl), OAuth client credentials, retries, idempotent upserts |
-| Storage | PostgreSQL: raw JSONB snapshots plus a long-format RTA table (~935k rows) |
+| Storage | PostgreSQL (hosted on Neon's free tier): raw JSONB snapshots, a long-format RTA table (~518k suburb and state rows), and an ingest log |
 | Transformation | dbt Core: 3 layers, 8 models, 22 data tests |
 | Testing | 9 pytest tests (API mocked, real-workbook checks) and 22 dbt schema and singular tests |
 | BI | Power BI Project (TMDL semantic model + PBIR report), generated from `powerbi/build_pbip.py` |
 | CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres |
-| Orchestration | GitHub Actions cron jobs (skip until secrets are configured) |
+| Orchestration | One scheduled GitHub Actions workflow, run end to end against a hosted Postgres (Neon): RTA reloaded only when the workbook changes, then Domain snapshot, `dbt build`, mart export and a database-size check |
 
 ## Engineering decisions worth a look
 

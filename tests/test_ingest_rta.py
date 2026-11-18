@@ -120,3 +120,30 @@ def test_real_workbook_known_values():
     assert v[("postcode", "4000", "Flat 1", date(2012, 3, 31), "median_rent")] == 430
     assert v[("suburb", "Toowong", "Flat 1", date(2017, 9, 30), "median_rent")] == 390
     rta.quality_checks(recs)   # raises on duplicates/negatives; range warnings are allowed
+
+
+@pytest.mark.skipif(not os.getenv("TEST_DATABASE_URL"), reason="needs TEST_DATABASE_URL")
+def test_geo_filter_and_if_changed(workbook, monkeypatch):
+    """--geo keeps only the requested levels; --if-changed skips an identical second load."""
+    import psycopg
+
+    dsn = os.environ["TEST_DATABASE_URL"]
+    monkeypatch.setenv("DATABASE_URL", dsn)
+    with psycopg.connect(dsn) as conn:
+        for f in ("002_rta_schema.sql", "003_ingest_log.sql"):
+            conn.execute(open(rta.ROOT / "sql" / f).read())
+        conn.execute("TRUNCATE raw.ingest_log")
+
+    args = ["--file", str(workbook), "--geo", "suburb,state", "--if-changed"]
+    assert rta.main(args) == 0
+    assert rta.main(args) == 0          # same file + same geo -> skipped
+
+    with psycopg.connect(dsn) as conn:
+        levels = {r[0] for r in conn.execute("SELECT DISTINCT geo_level FROM raw.rta_bond_stats")}
+        log_rows = conn.execute("SELECT count(*) FROM raw.ingest_log WHERE source = 'rta'").fetchone()[0]
+    assert levels == {"suburb", "state"}
+    assert log_rows == 1                # only the first run loaded
+
+    assert rta.main(["--file", str(workbook), "--if-changed"]) == 0   # different geo -> reloads
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM raw.ingest_log WHERE source = 'rta'").fetchone()[0] == 2

@@ -18,11 +18,14 @@ Usage:
     python ingest_rta.py                               # parse data/raw/rta/rta-bond-statistics.xlsx -> Postgres
     python ingest_rta.py --download                    # download the latest workbook first
     python ingest_rta.py --skip-db --csv-out data/processed/rta_long.csv
+    python ingest_rta.py --download --geo suburb,state --if-changed   # hosted / scheduled run
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
 import logging
 import os
 import re
@@ -223,7 +226,29 @@ def write_csv(records: list[Record], path: Path) -> None:
         w.writerows(r.as_row() for r in records)
 
 
-def load_to_postgres(dsn: str, records: list[Record], source_file: str) -> int:
+def file_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def already_loaded(dsn: str, sha: str, geo: list[str] | None) -> bool:
+    """True if the last successful RTA load used this exact workbook and geo filter."""
+    import psycopg
+
+    with psycopg.connect(dsn) as conn:
+        if conn.execute("SELECT to_regclass('raw.ingest_log')").fetchone()[0] is None:
+            return False
+        row = conn.execute(
+            "SELECT file_sha256, detail->'geo' FROM raw.ingest_log WHERE source = 'rta' "
+            "ORDER BY loaded_at DESC LIMIT 1").fetchone()
+    return bool(row) and row[0] == sha and row[1] == (sorted(geo) if geo else None)
+
+
+def load_to_postgres(dsn: str, records: list[Record], source_file: str,
+                     sha: str | None = None, geo: list[str] | None = None) -> int:
     import psycopg
 
     cols = COLUMNS + ["source_file"]
@@ -232,7 +257,11 @@ def load_to_postgres(dsn: str, records: list[Record], source_file: str) -> int:
         with cur.copy(f"COPY raw.rta_bond_stats ({', '.join(cols)}) FROM STDIN") as cp:
             for r in records:
                 cp.write_row(r.as_row() + [source_file])
-        conn.commit()   # truncate + load succeed or fail together
+        if cur.execute("SELECT to_regclass('raw.ingest_log')").fetchone()[0] is not None:
+            cur.execute(
+                "INSERT INTO raw.ingest_log (source, rows_loaded, file_sha256, detail) VALUES ('rta', %s, %s, %s)",
+                (len(records), sha, json.dumps({"file": source_file, "geo": sorted(geo) if geo else None})))
+        conn.commit()   # truncate + load + log succeed or fail together
     return len(records)
 
 
@@ -242,7 +271,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--download", action="store_true", help="download the latest workbook first")
     parser.add_argument("--skip-db", action="store_true")
     parser.add_argument("--csv-out", type=Path, help="also write the long table to CSV")
+    parser.add_argument("--geo", help="comma-separated geo levels to load (postcode,suburb,lga,state); "
+                                      "default all. The dbt models only use suburb and state.")
+    parser.add_argument("--if-changed", action="store_true",
+                        help="skip the database load if this exact workbook (and --geo) was already loaded")
     args = parser.parse_args(argv)
+    geo = [g.strip() for g in args.geo.split(",")] if args.geo else None
+    if geo and not set(geo) <= {"postcode", "suburb", "lga", "state"}:
+        parser.error(f"unknown geo level in --geo {args.geo}")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     try:
@@ -257,16 +293,24 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Workbook not found: %s (download it from %s)", args.file, RTA_URL)
         return 1
 
-    records = parse_workbook(args.file)
+    sha = file_sha256(args.file)
+    if args.if_changed and not args.skip_db and already_loaded(os.environ["DATABASE_URL"], sha, geo):
+        log.info("workbook unchanged since last load (sha256 %s...); nothing to do", sha[:12])
+        return 0
+
+    records = parse_workbook(args.file)          # always parse everything: the checks cover all sheets
     for w in quality_checks(records):
         log.warning(w)
     log.info("parsed %d records", len(records))
+    if geo:
+        records = [r for r in records if r.geo_level in geo]
+        log.info("keeping %d records for geo levels %s", len(records), ",".join(geo))
 
     if args.csv_out:
         write_csv(records, args.csv_out)
         log.info("wrote %s", args.csv_out)
     if not args.skip_db:
-        n = load_to_postgres(os.environ["DATABASE_URL"], records, args.file.name)
+        n = load_to_postgres(os.environ["DATABASE_URL"], records, args.file.name, sha=sha, geo=geo)
         log.info("loaded %d rows into raw.rta_bond_stats", n)
     return 0
 

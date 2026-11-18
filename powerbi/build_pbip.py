@@ -294,7 +294,8 @@ MEASURES = [
 
     # ---- Labels
     ("Data Banner", "Labels", None, "Warns when Domain listings are synthetic.",
-     'IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" )'),
+     'IF ( COUNTROWS ( Gap ) = 0, "RTA data only · Domain listings pending API access", '
+     'IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" ) )'),
     ("Data As Of", "Labels", None, "Data currency label.",
      '"RTA data to " & FORMAT ( SELECTEDVALUE ( Manifest[rta_latest_quarter] ), "mmm yyyy" ) & "  ·  exported " & LEFT ( SELECTEDVALUE ( Manifest[exported_at] ), 10 )'),
     ("Source Credit", "Labels", None, "Attribution.",
@@ -545,6 +546,14 @@ def compute_defaults(data_dir: Path) -> None:
         return
     with f.open(encoding="utf-8") as fh:
         qs = [r["quarter_end"] for r in csv.DictReader(fh) if r["rta_quarters_behind"] == "0"]
+    if not qs:                       # no Domain data yet: fall back to the latest RTA quarter
+        trend = data_dir / "mart_rta_suburb_trend.csv"
+        if trend.exists():
+            with trend.open(encoding="utf-8") as fh:
+                qs = [r["quarter_end"] for r in csv.DictReader(fh)]
+    if not qs:
+        DEFAULTS["quarter_label"] = "Sep Qtr 2026"
+        return
     d = date.fromisoformat(max(qs))
     DEFAULTS["quarter_label"] = f"{d.strftime('%b')} Qtr {d.year}"
 

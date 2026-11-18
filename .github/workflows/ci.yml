@@ -51,12 +51,13 @@ jobs:
         run: pytest -q
 
       - name: Create raw schemas
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/001_raw_schema.sql -f sql/002_rta_schema.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/001_raw_schema.sql -f sql/002_rta_schema.sql -f sql/003_ingest_log.sql
 
       - name: Load RTA fixture through the real parser
         run: |
           python scripts/make_rta_fixture.py data/raw/rta/rta-bond-statistics.xlsx
-          python ingest_rta.py
+          python ingest_rta.py --geo suburb,state --if-changed     # same flags as the scheduled pipeline
+          python ingest_rta.py --geo suburb,state --if-changed     # second run must skip (unchanged)
 
       - name: Load synthetic Domain listings
         run: python scripts/generate_fake_domain.py --start 2026-07-01 --end 2026-11-18 --truncate
@@ -69,3 +70,9 @@ jobs:
 
       - name: Export marts (smoke test)
         run: python scripts/export_marts.py
+
+      - name: dbt build with no Domain data (state before API access)
+        working-directory: dbt
+        run: |
+          psql "$DATABASE_URL" -c "TRUNCATE raw.domain_rent_listings"
+          dbt build --profiles-dir . --fail-fast
