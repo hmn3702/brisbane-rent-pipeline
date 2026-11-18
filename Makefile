@@ -23,7 +23,7 @@ real: up  ## full pipeline on the real RTA workbook in data/raw/rta/ (+ Domain i
 	$(RUN) bash scripts/pipeline.sh real
 
 test: up  ## pytest, with the database tests run against a separate rent_test database
-	$(RUN) -e TEST_DATABASE_URL=postgresql://rent:rent@db:5432/rent_test pytest -q
+	$(COMPOSE) run --rm -e TEST_DATABASE_URL=postgresql://rent:rent@db:5432/rent_test app pytest -q
 
 dbt-test: up  ## dbt tests only (after demo or real)
 	$(RUN) bash -c "cd dbt && dbt test --profiles-dir ."
