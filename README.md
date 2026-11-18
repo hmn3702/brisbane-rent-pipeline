@@ -59,7 +59,8 @@ flowchart LR
 | Transformation | dbt Core: 3 layers, 10 models, 28 data tests |
 | Testing | 12 pytest tests (API mocked, real-workbook checks) and 28 dbt schema and singular tests |
 | BI | Power BI Project (TMDL semantic model + PBIR report), generated from `powerbi/build_pbip.py` |
-| CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres |
+| CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres, plus the same run through `docker compose` |
+| Local run | Docker Compose (Postgres 16 + a Python/dbt image) and a Makefile: `make demo` runs everything |
 | Orchestration | One scheduled GitHub Actions workflow, run end to end against a hosted Postgres (Neon): RTA reloaded only when the workbook changes, then Domain snapshot, `dbt build`, mart export and a database-size check |
 
 ## Engineering decisions worth a look
@@ -127,25 +128,38 @@ ingest_domain.py, ingest_rta.py   ingestion jobs
 sql/                              raw-layer DDL
 dbt/                              staging → intermediate → marts, tests, macros
 config/suburbs.csv                tracked suburbs + Domain↔RTA name mapping (also a dbt seed)
-scripts/                          mart export for Power BI, synthetic-data generator
+scripts/                          pipeline runner, schema setup, mart export, synthetic-data generators
 powerbi/                          PBIP project, generator, DAX, Power Query, build notes
 tests/                            pytest
-.github/workflows/                daily Domain and quarterly RTA schedules
+Dockerfile, docker-compose.yml    Postgres 16 + Python/dbt runtime
+Makefile                          one-command entry points (make help)
+.github/workflows/                CI (pytest, dbt, Docker) and the daily hosted pipeline
 docs/RUNBOOK.md                   setup and run instructions for every stage
 ```
 
 ## Run it
 
-See **[docs/RUNBOOK.md](docs/RUNBOOK.md)**. Short version:
+Only Docker is needed. On synthetic data, with no downloads and no API keys:
 
 ```bash
-pip install -r requirements.txt
-psql "$DATABASE_URL" -f sql/001_raw_schema.sql -f sql/002_rta_schema.sql
-python ingest_rta.py --download                        # real RTA data
-python scripts/generate_fake_domain.py --truncate      # synthetic listings until Domain access is granted
-cd dbt && dbt build --profiles-dir . && cd ..
-python scripts/export_marts.py                         # then open powerbi/pbip/RentDashboard.pbip and Refresh
+make demo     # Postgres + schemas + RTA parser + synthetic listings + dbt build + CSV export
+make test     # pytest, database tests on a separate rent_test database
+make docs     # dbt docs and lineage graph on http://localhost:8080
 ```
+
+On real RTA data: download the bond statistics workbook into `data/raw/rta/rta-bond-statistics.xlsx`,
+then `make real`. Domain listings are added too if `DOMAIN_CLIENT_ID` and `DOMAIN_CLIENT_SECRET` are in `.env`.
+Then open `powerbi/pbip/RentDashboard.pbip` in Power BI Desktop and click Refresh.
+
+No `make` (e.g. Windows PowerShell)? Each target is one Docker command:
+
+```powershell
+docker compose up -d --wait db
+docker compose run --rm app bash scripts/pipeline.sh demo
+```
+
+The database is on `localhost:5433` (user, password and database are all `rent`).
+Running without Docker, and the hosted Neon setup, are in **[docs/RUNBOOK.md](docs/RUNBOOK.md)**.
 
 ## Data sources and attribution
 

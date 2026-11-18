@@ -1,0 +1,44 @@
+# Local stack: PostgreSQL 16 + the Python/dbt pipeline.
+#   make demo   -> full pipeline on synthetic data
+#   make real   -> full pipeline on the RTA workbook in data/raw/rta/
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rent
+      POSTGRES_PASSWORD: rent
+      POSTGRES_DB: rent
+    ports:
+      - "5433:5432"            # 5433 on the host, so it doesn't clash with a local Postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rent -d rent"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      # Set every variable the code looks at, so a Neon URL in .env / .env.local
+      # can never be picked up by the local stack.
+      DATABASE_URL: postgresql://rent:rent@db:5432/rent
+      DATABASE_URL_UNPOOLED: postgresql://rent:rent@db:5432/rent
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: rent
+      PGPASSWORD: rent
+      PGDATABASE: rent
+      PGSSLMODE: disable
+    profiles: ["app"]          # only started by `docker compose run app ...`
+
+volumes:
+  pgdata:

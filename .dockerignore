@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+.neon
+node_modules
+data
+dbt/target
+dbt/logs
+dbt/profiles.yml
+dbt/.user.yml
+powerbi/pbip
+powerbi/data
+docs/img
+**/__pycache__
+.pytest_cache

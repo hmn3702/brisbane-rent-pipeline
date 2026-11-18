@@ -76,3 +76,32 @@ jobs:
         run: |
           psql "$DATABASE_URL" -c "TRUNCATE raw.domain_rent_listings"
           dbt build --profiles-dir . --fail-fast
+
+  docker:
+    name: docker compose (make demo + make test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: make build
+
+      - name: make demo (full pipeline in containers)
+        run: make demo
+
+      - name: make demo again (RTA must be skipped as unchanged)
+        run: set -o pipefail; make demo 2>&1 | tee rerun.log && grep -q "workbook unchanged" rerun.log
+
+      - name: make test (pytest against rent_test)
+        run: make test
+
+      - name: Exported CSVs exist
+        run: |
+          ls -la powerbi/data
+          test -s powerbi/data/mart_rta_seasonality.csv
+          test -s powerbi/data/manifest.json
+
+      - name: Tear down
+        if: always()
+        run: make clean

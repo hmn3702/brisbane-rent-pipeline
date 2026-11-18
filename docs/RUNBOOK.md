@@ -2,6 +2,28 @@
 
 How to set up and run each stage. For what the project is and why, see the [README](../README.md).
 
+## Quick start — local stack with Docker
+
+Needs Docker Desktop (or Docker Engine with Compose v2). `make help` lists every target.
+
+| Command | What it does |
+|---|---|
+| `make demo` | Starts Postgres 16, applies `sql/0*.sql`, builds a synthetic RTA workbook once and loads it through the real parser, adds synthetic Domain listings, runs `dbt build`, exports the marts to `powerbi/data/` |
+| `make real` | Same, but loads `data/raw/rta/rta-bond-statistics.xlsx` (or `RTA_FILE=...`), and calls the Domain API when keys are in `.env` |
+| `make test` | pytest; the database tests use a separate `rent_test` database, created by `docker/initdb/` |
+| `make docs` | dbt docs and lineage graph on http://localhost:8080 |
+| `make psql` | psql inside the database container |
+| `make down` / `make clean` | Stop the containers / also delete the database volume |
+
+Notes:
+- The repo is bind-mounted into the `app` container, so code edits apply without a rebuild, and the CSVs land
+  in `powerbi/data/` on the host. Rebuild (`make build`) only after changing `requirements.txt`.
+- `docker-compose.yml` sets `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and the `PG*` variables explicitly.
+  Values in `.env` / `.env.local` (such as the Neon URL) never override them, so the local stack can't
+  write to the hosted database.
+- Postgres is published on `localhost:5433`, so it doesn't clash with a Postgres already on 5432.
+- The same steps run without Docker: set `DATABASE_URL` and `PG*`, then `bash scripts/pipeline.sh demo`.
+
 ## Step 1 — Domain ingest (asking rents, daily)
 
 Daily snapshot of live rental listings for the suburbs in `config/suburbs.csv`
@@ -27,7 +49,7 @@ FROM raw.v_domain_rent_quicklook GROUP BY 1 ORDER BY 3 DESC;`
     TEST_DATABASE_URL=postgresql://... pytest -q     # also tests the Postgres load
 
 ## Scheduling
-`.github/workflows/daily_ingest.yml` runs daily at 06:17 Brisbane. Add the three values from `.env`
+`.github/workflows/pipeline.yml` runs daily at 06:17 Brisbane (see *Hosted run* below). Add the values from `.env`
 as repository secrets. Note: raw JSON written on the runner is discarded — Postgres is the store of record there.
 
 ## Step 2 — RTA ingest (signed rents, quarterly)
@@ -48,7 +70,8 @@ by postcode (2012→), suburb (Sep 2017→), LGA and all of QLD, per dwelling ty
   `area_name` is the unique key, `area_label` the clean name.
 - `config/suburbs.csv` column `rta_suburb` maps Domain suburb names to RTA names
   (e.g. Domain "Brisbane City" = RTA "Brisbane").
-- `.github/workflows/quarterly_rta.yml` reloads on the 20th of Jan/Apr/Jul/Oct.
+- The daily `pipeline.yml` run downloads the workbook with `--if-changed`, so a new RTA release is loaded the
+  day it appears and every other day is a no-op.
 
 Example:
 
@@ -79,7 +102,7 @@ Run:
 
     cd dbt
     cp profiles.yml.example profiles.yml        # reads PGHOST/PGUSER/PGPASSWORD/PGDATABASE
-    dbt build --profiles-dir .                  # seed + 8 models + 22 tests
+    dbt build --profiles-dir .                  # seed + 10 models + 28 tests
     dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .   # lineage graph
 
 Notes:
@@ -101,21 +124,22 @@ The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same r
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push and pull request, against a throwaway Postgres 16 service:
+`.github/workflows/ci.yml` runs on every push and pull request. It has two jobs.
+
+**`test`**, against a throwaway Postgres 16 service:
 
 1. `pytest` (API mocked; the database tests run against the service).
 2. `scripts/make_rta_fixture.py` builds a small **synthetic** workbook in the RTA layout. It has every tracked
    suburb, plus the real file's quirks: a trailing space in a sheet name, `''` for suppressed cells, and a
-   duplicate suburb name. `ingest_rta.py` loads it, so CI never depends on the RTA website.
-3. `generate_fake_domain.py` with fixed dates, so the run is deterministic.
-4. `dbt build --fail-fast`: the seed, 8 models and 22 tests.
+   duplicate suburb name. `ingest_rta.py` loads it twice; the second run must skip it as unchanged.
+   CI never depends on the RTA website.
+3. `generate_fake_domain.py` adds synthetic listings.
+4. `dbt build --fail-fast`: the seed, 10 models and 28 tests.
 5. `export_marts.py` as a smoke test.
+6. `dbt build` again with the Domain table empty (the state before API access).
 
-To reproduce CI locally, run the same commands against any empty Postgres database (see `ci.yml`).
-
-The scheduled `daily_ingest` and `quarterly_rta` workflows first check that the repository secrets
-(`DATABASE_URL`, and `DOMAIN_CLIENT_ID` for the daily job) exist. Until they do, the jobs skip with a
-notice instead of failing.
+**`docker`** runs the Quick start commands for real: `make build`, `make demo` twice (the second must skip
+the unchanged workbook), `make test`, and checks that the CSVs were exported.
 
 ## Hosted run (Neon + the scheduled pipeline)
 

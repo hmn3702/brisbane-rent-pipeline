@@ -128,7 +128,10 @@ def test_geo_filter_and_if_changed(workbook, monkeypatch):
     import psycopg
 
     dsn = os.environ["TEST_DATABASE_URL"]
+    # Set both: database_url() prefers DATABASE_URL_UNPOOLED, and load_env() would
+    # otherwise fill it from .env.local (a Neon URL) and load the test data there.
     monkeypatch.setenv("DATABASE_URL", dsn)
+    monkeypatch.setenv("DATABASE_URL_UNPOOLED", dsn)
     with psycopg.connect(dsn) as conn:
         for f in ("002_rta_schema.sql", "003_ingest_log.sql"):
             conn.execute(open(rta.ROOT / "sql" / f).read())
