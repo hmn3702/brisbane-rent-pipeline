@@ -24,6 +24,9 @@ Notes:
   write to the hosted database.
 - Postgres is published on `localhost:5433`, so it doesn't clash with a Postgres already on 5432.
 - The same steps run without Docker: set `DATABASE_URL` and `PG*`, then `bash scripts/pipeline.sh demo`.
+- On Windows without `make` or Docker, `python scripts/dbt.py <dbt command>` runs dbt against `DATABASE_URL`
+  from `.env` / `.env.local` (it fills in the `PG*` variables). `docs generate`, `docs serve` and `test` are
+  read-only. `build` / `run` / `seed` are refused on a hosted database; use `bash scripts/dbt_wap.sh` from Git Bash.
 
 ## Step 1 — Domain ingest (asking rents, daily)
 

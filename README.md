@@ -184,6 +184,15 @@ docker compose run --rm app bash scripts/pipeline.sh demo
 ```
 
 The database is on `localhost:5433` (user, password and database are all `rent`).
+
+Without Docker, `scripts/dbt.py` runs dbt against the database in `DATABASE_URL` (`.env` / `.env.local`) on any OS:
+
+```powershell
+python scripts/dbt.py docs generate
+python scripts/dbt.py docs serve      # lineage graph on http://localhost:8080
+```
+
+On a hosted database it refuses `build`, `run` and `seed`. Those would skip write-audit-publish.
 Running without Docker, and the hosted Neon setup, are in **[docs/RUNBOOK.md](docs/RUNBOOK.md)**.
 
 ## Data sources and attribution
