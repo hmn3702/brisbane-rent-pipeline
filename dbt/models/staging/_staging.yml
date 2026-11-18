@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_domain__listing_snapshots
+    description: >
+      Domain rental listings, one row per listing per snapshot. Asking rent parsed from the
+      free-text displayPrice: monthly prices converted to weekly, ranges averaged, values outside
+      $80–$10,000/week set to null.
+    columns:
+      - name: listing_id
+        data_tests: [not_null]
+      - name: snapshot_date
+        data_tests: [not_null]
+      - name: dwelling_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Flat', 'House', 'Townhouse', 'Other']
+      - name: weekly_rent_asking
+        description: Asking rent in $/week; null when the price is hidden ("Contact agent") or unparseable.
+
+  - name: stg_rta__bond_stats
+    description: RTA median rents, new bonds and bonds held by postcode / suburb / LGA / state, long format.
+    columns:
+      - name: geo_level
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['postcode', 'suburb', 'lga', 'state']
+      - name: measure
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['median_rent', 'new_bonds', 'bonds_held']
+      - name: value
+        data_tests: [not_null]

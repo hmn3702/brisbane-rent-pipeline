@@ -1,0 +1,44 @@
+relationship 1b08c682-cb88-5fce-9727-1e953db064f6
+	fromColumn: RtaTrend.area_name
+	toColumn: DimSuburb.area_name
+
+relationship 09e747a2-706c-5963-972f-eaf1c4b76855
+	fromColumn: RtaLatest.area_name
+	toColumn: DimSuburb.area_name
+
+relationship 24a1fd89-11b0-5b97-a5d4-b05ca73cf263
+	fromColumn: Gap.rta_suburb
+	toColumn: DimSuburb.area_name
+
+relationship fc78702a-f227-52a2-aa18-aee47ee52b79
+	fromColumn: Velocity.rta_suburb
+	toColumn: DimSuburb.area_name
+
+relationship 28fca423-c61a-5f16-a547-8ac9cf994d1a
+	fromColumn: RtaTrend.dwelling
+	toColumn: DimDwelling.dwelling
+
+relationship 536fd4dc-3498-59cf-ad26-bcbfb6234ed5
+	fromColumn: RtaLatest.dwelling
+	toColumn: DimDwelling.dwelling
+
+relationship 0f75e417-bfa4-5c00-883b-78ca9827ce55
+	fromColumn: Gap.dwelling
+	toColumn: DimDwelling.dwelling
+
+relationship 62f8a95f-7c02-561c-97b6-f7b61f9408af
+	fromColumn: Velocity.dwelling
+	toColumn: DimDwelling.dwelling
+
+relationship 45ad2c35-fff7-586d-aef4-58af40503763
+	fromColumn: RtaTrend.quarter_end
+	toColumn: DimQuarter.quarter_end
+
+relationship f07f1109-b7cd-54b3-b207-28c764611b14
+	fromColumn: Gap.quarter_end
+	toColumn: DimQuarter.quarter_end
+
+relationship 53914c63-04a9-55f4-a172-e500da0268cf
+	fromColumn: Velocity.quarter_end
+	toColumn: DimQuarter.quarter_end
+

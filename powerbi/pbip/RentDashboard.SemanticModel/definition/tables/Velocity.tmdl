@@ -1,0 +1,105 @@
+table Velocity
+	lineageTag: 2fc14ec6-fb77-53a8-8b8c-6fc6e3145883
+
+	column suburb
+		dataType: string
+		lineageTag: 1d6388ed-4f06-554b-9b21-b920c2106e75
+		summarizeBy: none
+		sourceColumn: suburb
+
+		annotation SummarizationSetBy = User
+
+	column rta_suburb
+		dataType: string
+		isHidden
+		lineageTag: 894fc4ec-c3ff-5abb-8bb2-988ee9cb2fe1
+		summarizeBy: none
+		sourceColumn: rta_suburb
+
+		annotation SummarizationSetBy = User
+
+	column month_start
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: b0bad615-002e-55ee-8bbc-798f78167a66
+		summarizeBy: none
+		sourceColumn: month_start
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column quarter_end
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: 851b9d0f-cc6a-5907-9ed6-a13706e933f9
+		summarizeBy: none
+		sourceColumn: quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column dwelling
+		dataType: string
+		isHidden
+		lineageTag: f98d61e9-24f3-57f3-b9f2-7aa51291ad4d
+		summarizeBy: none
+		sourceColumn: dwelling
+
+		annotation SummarizationSetBy = User
+
+	column n_listings_closed
+		dataType: int64
+		lineageTag: d88df9b0-cf55-52bf-ad4f-bf22378b05e9
+		summarizeBy: none
+		sourceColumn: n_listings_closed
+
+		annotation SummarizationSetBy = User
+
+	column median_days_on_market
+		dataType: double
+		lineageTag: 594e40a8-2981-5a21-82ec-862508518c51
+		summarizeBy: none
+		sourceColumn: median_days_on_market
+
+		annotation SummarizationSetBy = User
+
+	column pct_with_price_cut
+		dataType: double
+		lineageTag: 2297586b-d114-58fe-a74c-d29bc9442b54
+		summarizeBy: none
+		sourceColumn: pct_with_price_cut
+
+		annotation SummarizationSetBy = User
+
+	column median_final_asking_rent
+		dataType: double
+		lineageTag: 66a7f40e-fa69-5d90-8d00-26ce4d526656
+		summarizeBy: none
+		sourceColumn: median_final_asking_rent
+
+		annotation SummarizationSetBy = User
+
+	partition Velocity = m
+		mode: import
+		source =
+				let
+				    Source  = Csv.Document(File.Contents(DataFolder & "\mart_listing_velocity_suburb_month.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed   = Table.TransformColumnTypes(Headers, {
+				        {"suburb", type text},
+				        {"rta_suburb", type text},
+				        {"month_start", type date},
+				        {"quarter_end", type date},
+				        {"dwelling", type text},
+				        {"n_listings_closed", Int64.Type},
+				        {"median_days_on_market", type number},
+				        {"pct_with_price_cut", type number},
+				        {"median_final_asking_rent", type number}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

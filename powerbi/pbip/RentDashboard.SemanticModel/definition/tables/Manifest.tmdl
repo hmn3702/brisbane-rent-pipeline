@@ -1,0 +1,52 @@
+table Manifest
+	isHidden
+	lineageTag: d41e1401-cff9-5268-a6fa-6fc23759a526
+
+	column exported_at
+		dataType: string
+		lineageTag: 45560b9d-b618-5556-a8f8-d5942b10543c
+		summarizeBy: none
+		sourceColumn: exported_at
+
+		annotation SummarizationSetBy = User
+
+	column domain_data_is_synthetic
+		dataType: boolean
+		lineageTag: a79b6b5c-1534-5460-b20e-76073ac27c7a
+		summarizeBy: none
+		sourceColumn: domain_data_is_synthetic
+
+		annotation SummarizationSetBy = User
+
+	column domain_synthetic_share
+		dataType: double
+		lineageTag: 44d46ca7-1a3c-525f-a44b-fa668e7e8ea5
+		summarizeBy: none
+		sourceColumn: domain_synthetic_share
+
+		annotation SummarizationSetBy = User
+
+	column rta_latest_quarter
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 18aab7b9-59c1-5be2-91b0-ee7c3a79f65f
+		summarizeBy: none
+		sourceColumn: rta_latest_quarter
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Manifest = m
+		mode: import
+		source =
+				let
+				    Json = Json.Document(File.Contents(DataFolder & "\manifest.json")),
+				    Row  = #table(
+				        type table [exported_at = text, domain_data_is_synthetic = logical, domain_synthetic_share = number, rta_latest_quarter = date],
+				        {{ Json[exported_at], Json[domain_data_is_synthetic], Json[domain_synthetic_share], Date.FromText(Json[rta_latest_quarter], "en-US") }})
+				in
+				    Row
+
+	annotation PBI_ResultType = Table
+

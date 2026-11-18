@@ -1,0 +1,55 @@
+table DimSuburb
+	lineageTag: 00bfbda1-d277-5c77-98ac-eeb1b3b9fd09
+
+	column area_name
+		dataType: string
+		lineageTag: ca1d7987-6fdc-5a59-918e-c6370d68b384
+		summarizeBy: none
+		sourceColumn: area_name
+
+		annotation SummarizationSetBy = User
+
+	column suburb
+		dataType: string
+		lineageTag: e835c011-13e8-512a-9b2c-9fcc498606eb
+		summarizeBy: none
+		sourceColumn: suburb
+
+		annotation SummarizationSetBy = User
+
+	column area_postcode
+		dataType: string
+		lineageTag: b8000c6c-6539-5745-92a6-555e6b4a6ae4
+		summarizeBy: none
+		sourceColumn: area_postcode
+
+		annotation SummarizationSetBy = User
+
+	column location_label
+		dataType: string
+		lineageTag: 5849e97d-d4e9-5476-8064-9599feb55079
+		dataCategory: Place
+		summarizeBy: none
+		sourceColumn: location_label
+
+		annotation SummarizationSetBy = User
+
+	column is_tracked
+		dataType: boolean
+		lineageTag: ab534364-e6b0-5928-b2f3-316baa35aa12
+		summarizeBy: none
+		sourceColumn: is_tracked
+
+		annotation SummarizationSetBy = User
+
+	partition DimSuburb = m
+		mode: import
+		source =
+				let
+				    Cols   = Table.SelectColumns(RtaTrend, {"area_name", "suburb", "area_postcode", "location_label", "is_tracked"}),
+				    Unique = Table.Distinct(Cols, {"area_name"})
+				in
+				    Unique
+
+	annotation PBI_ResultType = Table
+

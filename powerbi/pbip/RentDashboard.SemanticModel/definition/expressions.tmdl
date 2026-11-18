@@ -1,0 +1,5 @@
+expression DataFolder = "E:\project\QLD-rent-analysis\rent-pipeline\powerbi\data" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 909209aa-4259-5cae-8683-eadd14faee0d
+
+	annotation PBI_ResultType = Text
+

@@ -1,0 +1,164 @@
+table RtaLatest
+	lineageTag: d51e9d84-68fb-5ffd-a1b4-a91e6d721671
+
+	column area_name
+		dataType: string
+		isHidden
+		lineageTag: fbb17d50-1842-58d9-a218-c898150b9233
+		summarizeBy: none
+		sourceColumn: area_name
+
+		annotation SummarizationSetBy = User
+
+	column suburb
+		dataType: string
+		lineageTag: 35f95b00-6fcf-573a-9581-34a406814f0a
+		summarizeBy: none
+		sourceColumn: suburb
+
+		annotation SummarizationSetBy = User
+
+	column area_postcode
+		dataType: string
+		lineageTag: eb944b46-d659-5162-973c-57a8b2bcfe44
+		summarizeBy: none
+		sourceColumn: area_postcode
+
+		annotation SummarizationSetBy = User
+
+	column location_label
+		dataType: string
+		lineageTag: 74550c84-3013-5c54-bb59-8a3a9eda26b9
+		summarizeBy: none
+		sourceColumn: location_label
+
+		annotation SummarizationSetBy = User
+
+	column dwelling
+		dataType: string
+		isHidden
+		lineageTag: b6983c0e-3a57-50d6-a7df-b22f16fcd59f
+		summarizeBy: none
+		sourceColumn: dwelling
+
+		annotation SummarizationSetBy = User
+
+	column quarter_end
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 043b34ea-dc75-541b-85f8-2273b27d9958
+		summarizeBy: none
+		sourceColumn: quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column median_weekly_rent
+		dataType: double
+		lineageTag: 57e53ec5-08e6-5d6e-8df3-d232c0dd7fdb
+		summarizeBy: none
+		sourceColumn: median_weekly_rent
+
+		annotation SummarizationSetBy = User
+
+	column median_weekly_rent_prev_year
+		dataType: double
+		lineageTag: b9a70815-7cb2-5fbc-b7a7-6285ac5019f4
+		summarizeBy: none
+		sourceColumn: median_weekly_rent_prev_year
+
+		annotation SummarizationSetBy = User
+
+	column rent_yoy_pct
+		dataType: double
+		lineageTag: e1e74a66-21e5-5e2e-b762-8ea1b3c2cd6f
+		summarizeBy: none
+		sourceColumn: rent_yoy_pct
+
+		annotation SummarizationSetBy = User
+
+	column median_weekly_rent_5y_ago
+		dataType: double
+		lineageTag: 7b86163c-b2f3-5b58-ab4f-99bfd858c036
+		summarizeBy: none
+		sourceColumn: median_weekly_rent_5y_ago
+
+		annotation SummarizationSetBy = User
+
+	column rent_5y_pct
+		dataType: double
+		lineageTag: e44c909e-e90d-56b9-9c9b-a4ac97e8cc4e
+		summarizeBy: none
+		sourceColumn: rent_5y_pct
+
+		annotation SummarizationSetBy = User
+
+	column new_bonds
+		dataType: double
+		lineageTag: ab97f23c-3c1e-5c25-a2b2-bfbd579b8727
+		summarizeBy: none
+		sourceColumn: new_bonds
+
+		annotation SummarizationSetBy = User
+
+	column bonds_held
+		dataType: double
+		lineageTag: 4ad4bbdf-4fa2-5bf2-af7c-bdc7d140e7b9
+		summarizeBy: none
+		sourceColumn: bonds_held
+
+		annotation SummarizationSetBy = User
+
+	column rent_rank_qld
+		dataType: int64
+		lineageTag: 48326441-5480-5bfd-b6d8-8b7d1abbb79a
+		summarizeBy: none
+		sourceColumn: rent_rank_qld
+
+		annotation SummarizationSetBy = User
+
+	column n_suburbs_ranked
+		dataType: int64
+		lineageTag: cb78285d-dd0e-5011-b238-54af2f200905
+		summarizeBy: none
+		sourceColumn: n_suburbs_ranked
+
+		annotation SummarizationSetBy = User
+
+	column is_tracked
+		dataType: boolean
+		lineageTag: 41e30c46-b4cf-5bd4-bc36-0d4cadfd20e3
+		summarizeBy: none
+		sourceColumn: is_tracked
+
+		annotation SummarizationSetBy = User
+
+	partition RtaLatest = m
+		mode: import
+		source =
+				let
+				    Source  = Csv.Document(File.Contents(DataFolder & "\mart_rta_suburb_latest.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed   = Table.TransformColumnTypes(Headers, {
+				        {"area_name", type text},
+				        {"suburb", type text},
+				        {"area_postcode", type text},
+				        {"location_label", type text},
+				        {"dwelling", type text},
+				        {"quarter_end", type date},
+				        {"median_weekly_rent", type number},
+				        {"median_weekly_rent_prev_year", type number},
+				        {"rent_yoy_pct", type number},
+				        {"median_weekly_rent_5y_ago", type number},
+				        {"rent_5y_pct", type number},
+				        {"new_bonds", type number},
+				        {"bonds_held", type number},
+				        {"rent_rank_qld", Int64.Type},
+				        {"n_suburbs_ranked", Int64.Type},
+				        {"is_tracked", type logical}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

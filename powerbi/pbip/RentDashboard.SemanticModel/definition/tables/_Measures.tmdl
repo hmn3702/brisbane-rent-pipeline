@@ -1,0 +1,343 @@
+table _Measures
+	lineageTag: e822b999-5a7e-5665-8198-44eca5288196
+
+	/// Selected maximum RTA lag (quarters); 0 = like-for-like.
+	measure 'Max RTA Lag Value' = SELECTEDVALUE ( 'Max RTA Lag'[Max RTA Lag], 0 )
+		formatString: #,0
+		displayFolder: Parameters
+		lineageTag: 03bf5afa-b05f-54d2-84ca-dc95aedc1851
+
+	/// Latest quarter in the RTA data.
+	measure 'Latest RTA Quarter' = CALCULATE ( MAX ( RtaLatest[quarter_end] ), REMOVEFILTERS () )
+		formatString: yyyy-mm-dd
+		displayFolder: Parameters
+		lineageTag: d385b85b-f820-5a49-8769-0d759b06747e
+
+	/// Median weekly rent of new tenancies (RTA). Weighted average of medians by new bonds when several rows are in context.
+	measure 'Signed Rent' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaTrend, IF ( _r_all, RtaTrend[dwelling] = "All dwellings", TRUE () ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( RtaTrend[median_weekly_rent] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, RtaTrend[median_weekly_rent] ),
+			        DIVIDE ( SUMX ( _t, RtaTrend[median_weekly_rent] * RtaTrend[new_bonds] ), SUMX ( _t, RtaTrend[new_bonds] ) )
+			    )
+		formatString: \$#,0
+		displayFolder: RTA
+		lineageTag: 6742ecf8-8362-55dc-81e3-0ca327779e7d
+
+	/// Signed rent for the same quarter one year earlier.
+	measure 'Signed Rent LY' =
+			VAR _q = MAX ( DimQuarter[quarter_end] )
+			RETURN
+			    CALCULATE ( [Signed Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = EOMONTH ( _q, -12 ) )
+		formatString: \$#,0
+		displayFolder: RTA
+		lineageTag: 07ed0e4a-c6a3-529b-b82c-bc65ecbdb976
+
+	/// Year-on-year change in signed rent (RTA advises YoY, not QoQ).
+	measure 'Signed Rent YoY %' = DIVIDE ( [Signed Rent] - [Signed Rent LY], [Signed Rent LY] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: RTA
+		lineageTag: 5dad7e50-bc79-5ed3-b69e-0983c630abfa
+
+	/// Queensland-wide median for the quarter and dwelling in context.
+	measure 'QLD Median Rent' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( CALCULATETABLE ( RtaTrend, REMOVEFILTERS ( DimSuburb ) ), IF ( _r_all, RtaTrend[dwelling] = "All dwellings", TRUE () ) )
+			RETURN
+			    IF (
+			        HASONEVALUE ( DimQuarter[quarter_end] ) && COUNTROWS ( DISTINCT ( SELECTCOLUMNS ( _r, "d", RtaTrend[dwelling] ) ) ) = 1,
+			        MAXX ( _r, RtaTrend[qld_median_weekly_rent] )
+			    )
+		formatString: \$#,0
+		displayFolder: RTA
+		lineageTag: 2d4e6a6e-2c2a-5e42-adea-a7f72781e853
+
+	/// Queensland median one year earlier.
+	measure 'QLD Median Rent LY' =
+			VAR _q = MAX ( DimQuarter[quarter_end] )
+			RETURN
+			    CALCULATE ( [QLD Median Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = EOMONTH ( _q, -12 ) )
+		formatString: \$#,0
+		displayFolder: RTA
+		lineageTag: 7f44ce65-194a-58a3-a201-079031439baf
+
+	/// Signed rent relative to the Queensland median.
+	measure 'Premium vs QLD %' = DIVIDE ( [Signed Rent], [QLD Median Rent] ) - 1
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: RTA
+		lineageTag: f030f536-4829-5c69-b20c-67831909b5ef
+
+	/// New tenancies signed (no double count of 'All dwellings').
+	measure 'New Bonds' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaTrend, IF ( _r_all, RtaTrend[dwelling] = "All dwellings", TRUE () ) )
+			RETURN SUMX ( _r, RtaTrend[new_bonds] )
+		formatString: #,0
+		displayFolder: RTA
+		lineageTag: dbb396e0-965e-5056-900e-5a9e70cd7bc9
+
+	/// Signed rent in the latest RTA quarter.
+	measure 'Signed Rent (latest)' =
+			VAR _q = [Latest RTA Quarter]
+			RETURN
+			    CALCULATE ( [Signed Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
+		formatString: \$#,0
+		displayFolder: RTA latest
+		lineageTag: 2bfc8a8e-deb7-5aa9-89d2-16bff57f7524
+
+	/// YoY change in the latest RTA quarter.
+	measure 'Signed Rent YoY % (latest)' =
+			VAR _q = [Latest RTA Quarter]
+			RETURN
+			    CALCULATE ( [Signed Rent YoY %], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: RTA latest
+		lineageTag: 85c7806f-308c-5142-8e33-f54624faf5d7
+
+	/// Premium over Queensland in the latest quarter.
+	measure 'Premium vs QLD % (latest)' =
+			VAR _q = [Latest RTA Quarter]
+			RETURN
+			    CALCULATE ( [Premium vs QLD %], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: RTA latest
+		lineageTag: 1e69c2c6-06ce-5c58-8b8a-a7fb73acf0bb
+
+	/// Queensland median in the latest quarter.
+	measure 'QLD Median Rent (latest)' =
+			VAR _q = [Latest RTA Quarter]
+			RETURN
+			    CALCULATE ( [QLD Median Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
+		formatString: \$#,0
+		displayFolder: RTA latest
+		lineageTag: 1b6cec96-60df-5b92-9910-695eaf5688ba
+
+	/// Queensland median YoY in the latest quarter.
+	measure 'QLD Median YoY % (latest)' =
+			VAR _q = [Latest RTA Quarter]
+			RETURN
+			    CALCULATE ( DIVIDE ( [QLD Median Rent], [QLD Median Rent LY] ) - 1, REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: RTA latest
+		lineageTag: c29bc2b6-256e-55b8-b485-6ab5785ba7ec
+
+	/// Latest signed median (suburbs with >= 30 new bonds).
+	measure 'Latest Rent' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) && ( RtaLatest[new_bonds] >= 30 ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( RtaLatest[median_weekly_rent] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, RtaLatest[median_weekly_rent] ),
+			        DIVIDE ( SUMX ( _t, RtaLatest[median_weekly_rent] * RtaLatest[new_bonds] ), SUMX ( _t, RtaLatest[new_bonds] ) )
+			    )
+		formatString: \$#,0
+		displayFolder: League table
+		lineageTag: 17c02fb6-a82a-56dc-a06c-178aa908d58c
+
+	/// 1-year change, suburbs with >= 30 new bonds.
+	measure 'Latest YoY %' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) && ( RtaLatest[new_bonds] >= 30 ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( RtaLatest[rent_yoy_pct] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, RtaLatest[rent_yoy_pct] ) / 100,
+			        DIVIDE ( SUMX ( _t, RtaLatest[rent_yoy_pct] * RtaLatest[new_bonds] ), SUMX ( _t, RtaLatest[new_bonds] ) ) / 100
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: League table
+		lineageTag: 683062ad-7758-5f84-bcb1-b001e969d6f3
+
+	/// 5-year change, suburbs with >= 30 new bonds.
+	measure 'Latest 5y %' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) && ( RtaLatest[new_bonds] >= 30 ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( RtaLatest[rent_5y_pct] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, RtaLatest[rent_5y_pct] ) / 100,
+			        DIVIDE ( SUMX ( _t, RtaLatest[rent_5y_pct] * RtaLatest[new_bonds] ), SUMX ( _t, RtaLatest[new_bonds] ) ) / 100
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: League table
+		lineageTag: 139185c0-3d37-5f0e-9387-c83813fbc689
+
+	/// New bonds in the latest quarter.
+	measure 'Latest New Bonds' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) )
+			RETURN SUMX ( _r, RtaLatest[new_bonds] )
+		formatString: #,0
+		displayFolder: League table
+		lineageTag: b9c68daf-4e20-5f3a-bc59-687270a72994
+
+	/// Rank among QLD suburbs by median rent (1 = most expensive).
+	measure 'QLD Rank' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) && ( RtaLatest[new_bonds] >= 30 ) )
+			RETURN IF ( COUNTROWS ( _r ) = 1, MAXX ( _r, RtaLatest[rent_rank_qld] ) )
+		formatString: #,0
+		displayFolder: League table
+		lineageTag: 1c45dd48-fbf7-5740-8e84-c72df15126e7
+
+	/// Suburbs with a reliable latest median (>= 30 new bonds).
+	measure 'Suburbs Ranked' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( RtaLatest, IF ( _r_all, RtaLatest[dwelling] = "All dwellings", TRUE () ) && ( RtaLatest[new_bonds] >= 30 && NOT ISBLANK ( RtaLatest[median_weekly_rent] ) ) )
+			RETURN COUNTROWS ( _r )
+		formatString: #,0
+		displayFolder: League table
+		lineageTag: 97bf4118-5448-5253-9fcc-5fdfbd18d5ff
+
+	/// Median asking rent of new Domain listings; weighted by listings when several rows.
+	measure 'Asking Rent' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Gap, IF ( _r_all, Gap[dwelling] = "All dwellings", TRUE () ) && ( Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( Gap[median_asking_rent] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, Gap[median_asking_rent] ),
+			        DIVIDE ( SUMX ( _t, Gap[median_asking_rent] * Gap[n_new_listings] ), SUMX ( _t, Gap[n_new_listings] ) )
+			    )
+		formatString: \$#,0
+		displayFolder: Gap
+		lineageTag: e50fdf3c-db78-5bc6-b94f-1bffa9c3e7af
+
+	/// RTA signed rent of the quarter the asking rents are compared with (as-of join); weighted by bonds.
+	measure 'Signed Rent (compared)' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Gap, IF ( _r_all, Gap[dwelling] = "All dwellings", TRUE () ) && ( Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( Gap[median_signed_rent] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, Gap[median_signed_rent] ),
+			        DIVIDE ( SUMX ( _t, Gap[median_signed_rent] * Gap[rta_new_bonds] ), SUMX ( _t, Gap[rta_new_bonds] ) )
+			    )
+		formatString: \$#,0
+		displayFolder: Gap
+		lineageTag: 6e4a7b91-3f80-5424-9fe1-cd041b020370
+
+	/// Asking vs signed rent. With 'All dwellings' (or no dwelling filter) it is mix-adjusted: per-dwelling gaps weighted by RTA new bonds. For one suburb this equals gap_pct_mix_adjusted in the dbt mart.
+	measure 'Gap %' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( CALCULATETABLE ( Gap, REMOVEFILTERS ( DimDwelling ) ), Gap[dwelling] <> "All dwellings" && ( _r_all || Gap[dwelling] IN _r_sel ) && ( NOT ISBLANK ( Gap[gap_pct] ) && Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _r ) = 1,
+			        MAXX ( _r, Gap[gap_pct] ) / 100,
+			        DIVIDE ( SUMX ( _r, Gap[gap_pct] * Gap[rta_new_bonds] ), SUMX ( _r, Gap[rta_new_bonds] ) ) / 100
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Gap
+		lineageTag: 161aaab6-af28-537c-a94e-8c226ce46d5c
+
+	/// New Domain listings in the period.
+	measure 'New Listings' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Gap, IF ( _r_all, Gap[dwelling] = "All dwellings", TRUE () ) && ( Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) )
+			RETURN SUMX ( _r, Gap[n_new_listings] )
+		formatString: #,0
+		displayFolder: Gap
+		lineageTag: efefa008-f237-5f72-bc5b-cdb3f2732447
+
+	/// Cells resting on < 5 listings or < 10 RTA bonds.
+	measure 'Low Sample Rows' = COUNTROWS ( FILTER ( Gap, Gap[is_low_sample] && Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) ) + 0
+		formatString: #,0
+		displayFolder: Gap
+		lineageTag: 4ebe0a8a-a9c2-59cd-84b8-30e6c026c826
+
+	/// Which RTA quarter the asking rents are compared with.
+	measure 'RTA Quarter Compared' =
+			VAR _q = MAXX ( FILTER ( Gap, Gap[rta_quarters_behind] <= [Max RTA Lag Value] ), Gap[rta_quarter_end] )
+			RETURN IF ( ISBLANK ( _q ), "–", "vs RTA " & FORMAT ( _q, "mmm" ) & " Qtr " & YEAR ( _q ) )
+		displayFolder: Gap
+		lineageTag: 41b38cb8-04ab-5803-b33d-00255c973bff
+
+	/// Listings that left the market (leased or withdrawn).
+	measure 'Listings Closed' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Velocity, IF ( _r_all, Velocity[dwelling] = "All dwellings", TRUE () ) )
+			RETURN SUMX ( _r, Velocity[n_listings_closed] )
+		formatString: #,0
+		displayFolder: Velocity
+		lineageTag: 0d69de0e-e367-51ab-86ea-00db69c6038d
+
+	/// Median days on market; weighted average of medians when several rows.
+	measure 'Days on Market' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Velocity, IF ( _r_all, Velocity[dwelling] = "All dwellings", TRUE () ) )
+			VAR _t = FILTER ( _r, NOT ISBLANK ( Velocity[median_days_on_market] ) )
+			RETURN
+			    IF (
+			        COUNTROWS ( _t ) = 1,
+			        MAXX ( _t, Velocity[median_days_on_market] ),
+			        DIVIDE ( SUMX ( _t, Velocity[median_days_on_market] * Velocity[n_listings_closed] ), SUMX ( _t, Velocity[n_listings_closed] ) )
+			    )
+		formatString: 0.0
+		displayFolder: Velocity
+		lineageTag: 705ba8d1-1bc9-5b83-bd33-a602868ba846
+
+	/// Share of closed listings that cut the asking price first.
+	measure 'Price Cut %' =
+			VAR _r_sel = VALUES ( DimDwelling[dwelling] )
+			VAR _r_all = "All dwellings" IN _r_sel
+			VAR _r = FILTER ( Velocity, IF ( _r_all, Velocity[dwelling] = "All dwellings", TRUE () ) )
+			RETURN DIVIDE ( SUMX ( _r, Velocity[pct_with_price_cut] * Velocity[n_listings_closed] ), SUMX ( _r, Velocity[n_listings_closed] ) ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Velocity
+		lineageTag: 68bc816d-5653-5da5-aa9a-6e949ef632c8
+
+	/// Warns when Domain listings are synthetic.
+	measure 'Data Banner' = IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" )
+		displayFolder: Labels
+		lineageTag: ad486346-836c-5daf-853a-c2f62acd768c
+
+	/// Data currency label.
+	measure 'Data As Of' = "RTA data to " & FORMAT ( SELECTEDVALUE ( Manifest[rta_latest_quarter] ), "mmm yyyy" ) & "  ·  exported " & LEFT ( SELECTEDVALUE ( Manifest[exported_at] ), 10 )
+		displayFolder: Labels
+		lineageTag: a57bead2-43ef-5316-902f-856ed574bcb2
+
+	/// Attribution.
+	measure 'Source Credit' = "Source: Residential Tenancies Authority (Qld), CC BY 4.0 · Domain listings"
+		displayFolder: Labels
+		lineageTag: 8d01b6a9-a45e-5bd1-bb23-8994311a243f
+
+	column Placeholder
+		dataType: int64
+		isHidden
+		lineageTag: b113579f-76fa-554b-9daf-3800cb4126cd
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Placeholder]
+
+		annotation SummarizationSetBy = User
+
+	partition _Measures = calculated
+		mode: import
+		source = ROW ( "Placeholder", 0 )
+

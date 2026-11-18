@@ -1,0 +1,150 @@
+table Gap
+	lineageTag: 359dc4a1-2116-5097-9d16-4a2abafbb41a
+
+	column suburb
+		dataType: string
+		lineageTag: 424cb5d3-ddbe-5620-b3f4-0550cb526cdb
+		summarizeBy: none
+		sourceColumn: suburb
+
+		annotation SummarizationSetBy = User
+
+	column rta_suburb
+		dataType: string
+		isHidden
+		lineageTag: dcca4471-15bb-551b-9349-91d464d92aa9
+		summarizeBy: none
+		sourceColumn: rta_suburb
+
+		annotation SummarizationSetBy = User
+
+	column quarter_end
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: acd82c3d-c7e7-5da4-bb35-a4d793db2ba8
+		summarizeBy: none
+		sourceColumn: quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column dwelling
+		dataType: string
+		isHidden
+		lineageTag: 471217b8-9e06-5f0c-8608-abc2238c0123
+		summarizeBy: none
+		sourceColumn: dwelling
+
+		annotation SummarizationSetBy = User
+
+	column n_new_listings
+		dataType: int64
+		lineageTag: 6400bd74-9e5b-55a3-ad38-03981bf79142
+		summarizeBy: none
+		sourceColumn: n_new_listings
+
+		annotation SummarizationSetBy = User
+
+	column median_asking_rent
+		dataType: double
+		lineageTag: 46244b4c-5e33-51fa-ad98-c5b690c3e319
+		summarizeBy: none
+		sourceColumn: median_asking_rent
+
+		annotation SummarizationSetBy = User
+
+	column rta_quarter_end
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 43b9f543-2408-57c0-9408-2037b4117419
+		summarizeBy: none
+		sourceColumn: rta_quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column rta_quarters_behind
+		dataType: int64
+		lineageTag: 57101cc7-d810-5558-b3aa-0aad2aea363d
+		summarizeBy: none
+		sourceColumn: rta_quarters_behind
+
+		annotation SummarizationSetBy = User
+
+	column median_signed_rent
+		dataType: double
+		lineageTag: 81087879-cb6d-5564-8168-2f08d026ffab
+		summarizeBy: none
+		sourceColumn: median_signed_rent
+
+		annotation SummarizationSetBy = User
+
+	column rta_new_bonds
+		dataType: double
+		lineageTag: 24b8e37a-5659-5326-be16-39d46bc30394
+		summarizeBy: none
+		sourceColumn: rta_new_bonds
+
+		annotation SummarizationSetBy = User
+
+	column gap_dollars
+		dataType: double
+		lineageTag: 63546b5b-f710-57a8-a594-ab97ac09b788
+		summarizeBy: none
+		sourceColumn: gap_dollars
+
+		annotation SummarizationSetBy = User
+
+	column gap_pct
+		dataType: double
+		lineageTag: f4f6636b-943e-5584-a899-d06b99b40a48
+		summarizeBy: none
+		sourceColumn: gap_pct
+
+		annotation SummarizationSetBy = User
+
+	column is_low_sample
+		dataType: boolean
+		lineageTag: b0b43cb6-d304-50a9-b940-b2d348c73aff
+		summarizeBy: none
+		sourceColumn: is_low_sample
+
+		annotation SummarizationSetBy = User
+
+	column gap_pct_mix_adjusted
+		dataType: double
+		lineageTag: 781d91ce-05b7-53be-9886-5211ae9b873d
+		summarizeBy: none
+		sourceColumn: gap_pct_mix_adjusted
+
+		annotation SummarizationSetBy = User
+
+	partition Gap = m
+		mode: import
+		source =
+				let
+				    Source  = Csv.Document(File.Contents(DataFolder & "\mart_rent_gap_suburb_quarter.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed   = Table.TransformColumnTypes(Headers, {
+				        {"suburb", type text},
+				        {"rta_suburb", type text},
+				        {"quarter_end", type date},
+				        {"dwelling", type text},
+				        {"n_new_listings", Int64.Type},
+				        {"median_asking_rent", type number},
+				        {"rta_quarter_end", type date},
+				        {"rta_quarters_behind", Int64.Type},
+				        {"median_signed_rent", type number},
+				        {"rta_new_bonds", type number},
+				        {"gap_dollars", type number},
+				        {"gap_pct", type number},
+				        {"is_low_sample", type logical},
+				        {"gap_pct_mix_adjusted", type number}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

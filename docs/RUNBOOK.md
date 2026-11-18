@@ -1,0 +1,100 @@
+# Runbook — Brisbane Rent Pipeline
+
+How to set up and run each stage. For what the project is and why, see the [README](../README.md).
+
+## Step 1 — Domain ingest (asking rents, daily)
+
+Daily snapshot of live rental listings for the suburbs in `config/suburbs.csv`
+→ raw JSON in `data/raw/domain/snapshot_date=YYYY-MM-DD/` → Postgres `raw.domain_rent_listings`.
+
+## Setup
+1. Register at developer.domain.com.au → create a project → add the **Agents & Listings** package →
+   create an API client with **Client Credentials** grant and scope `api_listings_read`.
+2. `pip install -r requirements.txt`
+3. `cp .env.example .env` and fill in keys + `DATABASE_URL` (local Postgres or Supabase).
+4. `psql "$DATABASE_URL" -f sql/001_raw_schema.sql`
+
+## Run
+    python ingest_domain.py                         # fetch today + load
+    python ingest_domain.py --skip-db               # fetch, save JSON only
+    python ingest_domain.py --reload-from-raw 2026-11-18   # reload saved JSON, no API calls
+
+Check quickly: `SELECT suburb, count(*), percentile_cont(0.5) WITHIN GROUP (ORDER BY weekly_rent)
+FROM raw.v_domain_rent_quicklook GROUP BY 1 ORDER BY 3 DESC;`
+
+## Tests
+    pytest -q                                        # API is mocked, no key needed
+    TEST_DATABASE_URL=postgresql://... pytest -q     # also tests the Postgres load
+
+## Scheduling
+`.github/workflows/daily_ingest.yml` runs daily at 06:17 Brisbane. Add the three values from `.env`
+as repository secrets. Note: raw JSON written on the runner is discarded — Postgres is the store of record there.
+
+## Step 2 — RTA ingest (signed rents, quarterly)
+
+Source: Queensland Residential Tenancies Authority bond statistics (CC BY 4.0).
+Median weekly rent of **new tenancies actually signed**, plus new bonds lodged and bonds held,
+by postcode (2012→), suburb (Sep 2017→), LGA and all of QLD, per dwelling type and bedrooms.
+
+    psql "$DATABASE_URL" -f sql/002_rta_schema.sql
+    python ingest_rta.py                    # parse data/raw/rta/rta-bond-statistics.xlsx -> raw.rta_bond_stats
+    python ingest_rta.py --download         # fetch the latest workbook first
+    python ingest_rta.py --skip-db --csv-out data/processed/rta_long.csv
+
+- All 12 sheets -> one long table (~935k rows). Full refresh each load, since RTA may revise history.
+- `raw.v_rta_quarterly` pivots the three measures and adds year-on-year rent change
+  (RTA advises YoY, not quarter-on-quarter, comparisons).
+- Duplicate suburb names keep their postcode (`West End (4101)` vs `West End (4810)`):
+  `area_name` is the unique key, `area_label` the clean name.
+- `config/suburbs.csv` column `rta_suburb` maps Domain suburb names to RTA names
+  (e.g. Domain "Brisbane City" = RTA "Brisbane").
+- `.github/workflows/quarterly_rta.yml` reloads on the 20th of Jan/Apr/Jul/Oct.
+
+Example:
+
+    SELECT area_label, dwelling, quarter_end, median_weekly_rent, rent_yoy_pct
+    FROM raw.v_rta_quarterly
+    WHERE geo_level = 'suburb' AND area_name IN ('Toowong', 'St Lucia', 'West End (4101)')
+      AND dwelling = 'Flat 2' AND quarter_end = '2026-09-30';
+
+## Step 3 — dbt transformations
+
+```
+raw.domain_rent_listings ─► stg_domain__listing_snapshots ─► int_domain__listings ─┬─► mart_rent_gap_suburb_quarter
+raw.rta_bond_stats ───────► stg_rta__bond_stats ──────────► int_rta__suburb_quarterly ┼─► mart_rta_suburb_latest
+config/suburbs.csv (seed) ──────────────────────────────────────────────────────────┴─► mart_listing_velocity_suburb_month
+```
+
+| Model | Grain | What it answers |
+|---|---|---|
+| `stg_domain__listing_snapshots` | listing × day | asking rent parsed to $/week (pcm → weekly, ranges averaged, "Contact agent" → null) |
+| `int_domain__listings` | listing | first/last seen, days on market, price cuts, RTA dwelling bucket (`House 4` = 4+ beds) |
+| `int_rta__suburb_quarterly` | suburb × dwelling × quarter | signed median rent, new bonds, bonds held, YoY |
+| `mart_rent_gap_suburb_quarter` | tracked suburb × quarter × dwelling | asking vs signed rent; `gap_pct_mix_adjusted` for suburb headlines |
+| `mart_rta_suburb_latest` | QLD suburb × dwelling | latest quarter, 1y / 5y change, QLD rank (map page) |
+| `mart_rta_suburb_trend` | QLD suburb × dwelling × quarter | history since 2017 with the QLD median alongside |
+| `mart_listing_velocity_suburb_month` | tracked suburb × month × dwelling | median days on market, % with price cut |
+
+Run:
+
+    cd dbt
+    cp profiles.yml.example profiles.yml        # reads PGHOST/PGUSER/PGPASSWORD/PGDATABASE
+    dbt build --profiles-dir .                  # seed + 8 models + 22 tests
+    dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .   # lineage graph
+
+Notes:
+- RTA publishes ~1 month after quarter end, so the current Domain quarter is compared with the latest
+  RTA quarter (`rta_quarters_behind`). Filter to `rta_quarters_behind = 0` for like-for-like results.
+- Do not headline the raw 'All dwellings' `gap_pct`: Domain's listing mix differs from RTA's bond mix
+  (RTA includes rooming accommodation). Use `gap_pct_mix_adjusted`.
+- No Domain key yet? `python scripts/generate_fake_domain.py --truncate` fills raw.domain_rent_listings
+  with FAKE snapshots so you can build and demo everything. Use a separate database for that.
+
+## Step 4 — Power BI
+
+    python scripts/export_marts.py              # marts -> powerbi/data/*.csv + manifest.json
+
+Then follow [`powerbi/README.md`](../powerbi/README.md): Power Query (`power_query.m`), star-schema model, DAX (`measures.dax`),
+four report pages, and a table of expected values to check every measure against.
+The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same rule, and a dbt test
+(`assert_mix_adjusted_gap_matches_dax_rule`) keeps them in sync.

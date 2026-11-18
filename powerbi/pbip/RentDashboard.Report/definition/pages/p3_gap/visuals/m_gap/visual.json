@@ -1,0 +1,121 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "m_gap",
+  "position": {
+    "x": 16,
+    "y": 478,
+    "z": 13000,
+    "height": 200,
+    "width": 1012,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DimDwelling"
+                    }
+                  },
+                  "Property": "dwelling"
+                }
+              },
+              "queryRef": "DimDwelling.dwelling",
+              "nativeQueryRef": "dwelling",
+              "active": true,
+              "displayName": "Dwelling"
+            }
+          ]
+        },
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DimSuburb"
+                    }
+                  },
+                  "Property": "suburb"
+                }
+              },
+              "queryRef": "DimSuburb.suburb",
+              "nativeQueryRef": "suburb",
+              "active": true,
+              "displayName": "Suburb"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Gap %"
+                }
+              },
+              "queryRef": "_Measures.Gap %",
+              "nativeQueryRef": "Gap %"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "subTotals": [
+        {
+          "properties": {
+            "rowSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "columnSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Gap % by suburb and dwelling (blank = suppressed by RTA)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,43 @@
+table DimDwelling
+	lineageTag: 71775f7e-4ad9-5f73-a04f-46dbe0a7f312
+
+	column dwelling
+		dataType: string
+		lineageTag: 9ea2614b-a007-59a5-96af-7fd724cb504a
+		summarizeBy: none
+		sourceColumn: dwelling
+		sortByColumn: dwelling_sort
+
+		annotation SummarizationSetBy = User
+
+	column dwelling_sort
+		dataType: int64
+		isHidden
+		lineageTag: 1e346dd4-179e-5105-a8f6-2c50e7ec65ac
+		summarizeBy: none
+		sourceColumn: dwelling_sort
+
+		annotation SummarizationSetBy = User
+
+	column dwelling_type
+		dataType: string
+		lineageTag: 306d25de-6be7-57b5-b670-190c062df983
+		summarizeBy: none
+		sourceColumn: dwelling_type
+
+		annotation SummarizationSetBy = User
+
+	partition DimDwelling = m
+		mode: import
+		source =
+				let
+				    All    = List.Distinct(RtaTrend[dwelling] & Gap[dwelling] & Velocity[dwelling]),
+				    Base   = Table.FromList(All, Splitter.SplitByNothing(), type table [dwelling = text]),
+				    Order  = {"All dwellings", "Flat 1", "Flat 2", "Flat 3", "House 2", "House 3", "House 4", "Townhouse 2", "Townhouse 3", "Other"},
+				    Sorted = Table.AddColumn(Base, "dwelling_sort", each let i = List.PositionOf(Order, [dwelling]) in if i < 0 then 99 else i, Int64.Type),
+				    Typed  = Table.AddColumn(Sorted, "dwelling_type", each Text.BeforeDelimiter([dwelling], " "), type text)
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

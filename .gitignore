@@ -1,0 +1,13 @@
+.env
+data/
+__pycache__/
+.pytest_cache/
+dbt/profiles.yml
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
+# Power BI project: local cache and user settings
+powerbi/pbip/**/.pbi/localSettings.json
+powerbi/pbip/**/.pbi/cache.abf
+powerbi/pbip.zip

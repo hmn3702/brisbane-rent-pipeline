@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: int_domain__listings
+    description: >
+      Listing lifecycle built from daily snapshots. A listing that stops appearing is treated as
+      leased or withdrawn on its last_seen date. Listings already live on the first snapshot are
+      left-censored (true listing date unknown) and get no days_on_market.
+    columns:
+      - name: listing_id
+        data_tests: [unique, not_null]
+      - name: days_on_market
+        description: Null while the listing is still active or when left-censored.
+      - name: rta_dwelling
+        description: >
+          RTA dwelling category ('Flat 2', 'House 4' ...). Bedrooms are clamped into RTA's buckets
+          (var rta_bedroom_buckets) — assumes RTA's top bucket means "N or more" bedrooms.
+
+  - name: int_rta__suburb_quarterly
+    description: RTA suburb stats pivoted to one row per suburb x dwelling x quarter, with YoY change.
+    columns:
+      - name: area_name
+        data_tests: [not_null]
+      - name: quarter_end
+        data_tests: [not_null]

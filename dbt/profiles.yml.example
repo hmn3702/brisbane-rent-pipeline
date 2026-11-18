@@ -1,0 +1,13 @@
+# Copy to ~/.dbt/profiles.yml (or keep here and run with --profiles-dir .)
+rent_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PGHOST', 'localhost') }}"
+      port: "{{ env_var('PGPORT', '5432') | int }}"
+      user: "{{ env_var('PGUSER') }}"
+      password: "{{ env_var('PGPASSWORD') }}"
+      dbname: "{{ env_var('PGDATABASE', 'rent') }}"
+      schema: analytics
+      threads: 4

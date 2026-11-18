@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: domain_rent_listings
+        description: Daily snapshot of live Domain rental listings (ingest_domain.py). One row per listing per snapshot_date; untouched API payload in JSONB.
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 7, period: day}
+      - name: rta_bond_stats
+        description: Queensland RTA bond statistics in long format (ingest_rta.py). Full refresh each quarter.
+        loaded_at_field: loaded_at
+        freshness:
+          warn_after: {count: 120, period: day}

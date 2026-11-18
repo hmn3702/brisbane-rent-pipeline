@@ -1,0 +1,156 @@
+table RtaTrend
+	lineageTag: 34496317-232d-5c1d-ad6e-13d471f64275
+
+	column area_name
+		dataType: string
+		isHidden
+		lineageTag: 55b6c4d7-cecc-5b05-ba11-65bd310baa80
+		summarizeBy: none
+		sourceColumn: area_name
+
+		annotation SummarizationSetBy = User
+
+	column suburb
+		dataType: string
+		lineageTag: 67085e90-e006-587f-a76d-f39c51ed7287
+		summarizeBy: none
+		sourceColumn: suburb
+
+		annotation SummarizationSetBy = User
+
+	column area_postcode
+		dataType: string
+		lineageTag: d8c005a8-770f-5059-beaa-c2927354eb12
+		summarizeBy: none
+		sourceColumn: area_postcode
+
+		annotation SummarizationSetBy = User
+
+	column location_label
+		dataType: string
+		lineageTag: 76556e26-d3d9-5e35-b111-01b0500ed7b4
+		summarizeBy: none
+		sourceColumn: location_label
+
+		annotation SummarizationSetBy = User
+
+	column dwelling
+		dataType: string
+		isHidden
+		lineageTag: 5702e62b-0ef2-53df-abf5-bb25e23e709c
+		summarizeBy: none
+		sourceColumn: dwelling
+
+		annotation SummarizationSetBy = User
+
+	column dwelling_type
+		dataType: string
+		lineageTag: 43655817-7ee3-5427-b1ca-fd6d6a8ecd01
+		summarizeBy: none
+		sourceColumn: dwelling_type
+
+		annotation SummarizationSetBy = User
+
+	column bedrooms
+		dataType: int64
+		lineageTag: 9dc8d601-b1b3-5e77-b7c4-25c0ed18f6e1
+		summarizeBy: none
+		sourceColumn: bedrooms
+
+		annotation SummarizationSetBy = User
+
+	column quarter_end
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: 98eeb5d4-8da0-5ade-af72-a63a24905eaa
+		summarizeBy: none
+		sourceColumn: quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column median_weekly_rent
+		dataType: double
+		lineageTag: 2f27b2b3-9316-53b3-95ef-89edc0da7a7b
+		summarizeBy: none
+		sourceColumn: median_weekly_rent
+
+		annotation SummarizationSetBy = User
+
+	column rent_yoy_pct
+		dataType: double
+		lineageTag: 2172cb1f-c288-5ab2-8adf-5b94c2983fd2
+		summarizeBy: none
+		sourceColumn: rent_yoy_pct
+
+		annotation SummarizationSetBy = User
+
+	column new_bonds
+		dataType: double
+		lineageTag: e31b8084-3a81-5b84-97fc-0edf0788f0d3
+		summarizeBy: none
+		sourceColumn: new_bonds
+
+		annotation SummarizationSetBy = User
+
+	column bonds_held
+		dataType: double
+		lineageTag: 763649d0-5aa9-5214-a20a-92f31691b1e3
+		summarizeBy: none
+		sourceColumn: bonds_held
+
+		annotation SummarizationSetBy = User
+
+	column qld_median_weekly_rent
+		dataType: double
+		lineageTag: 1b0b8b55-d09a-580e-88f4-f76e52832d2a
+		summarizeBy: none
+		sourceColumn: qld_median_weekly_rent
+
+		annotation SummarizationSetBy = User
+
+	column premium_vs_qld_pct
+		dataType: double
+		lineageTag: 5b78bc36-d357-554c-9bef-32b22a2a1555
+		summarizeBy: none
+		sourceColumn: premium_vs_qld_pct
+
+		annotation SummarizationSetBy = User
+
+	column is_tracked
+		dataType: boolean
+		lineageTag: 3642c9f0-d775-5192-995f-f880ce686f76
+		summarizeBy: none
+		sourceColumn: is_tracked
+
+		annotation SummarizationSetBy = User
+
+	partition RtaTrend = m
+		mode: import
+		source =
+				let
+				    Source  = Csv.Document(File.Contents(DataFolder & "\mart_rta_suburb_trend.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed   = Table.TransformColumnTypes(Headers, {
+				        {"area_name", type text},
+				        {"suburb", type text},
+				        {"area_postcode", type text},
+				        {"location_label", type text},
+				        {"dwelling", type text},
+				        {"dwelling_type", type text},
+				        {"bedrooms", Int64.Type},
+				        {"quarter_end", type date},
+				        {"median_weekly_rent", type number},
+				        {"rent_yoy_pct", type number},
+				        {"new_bonds", type number},
+				        {"bonds_held", type number},
+				        {"qld_median_weekly_rent", type number},
+				        {"premium_vs_qld_pct", type number},
+				        {"is_tracked", type logical}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,16 @@
+table 'Max RTA Lag'
+	lineageTag: dacb90d7-e648-5f92-a8db-c005493963cb
+
+	column 'Max RTA Lag'
+		dataType: int64
+		lineageTag: 032efa22-3acc-52b0-b7a8-b0d6a440b389
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Max RTA Lag]
+
+		annotation SummarizationSetBy = User
+
+	partition 'Max RTA Lag' = calculated
+		mode: import
+		source = SELECTCOLUMNS ( GENERATESERIES ( 0, 2, 1 ), "Max RTA Lag", [Value] )
+

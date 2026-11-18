@@ -1,0 +1,197 @@
+// =============================================================================
+// DAX measures - put them in an empty table called _Measures
+// (Home > Enter data > OK, then delete its column once a measure exists).
+//
+// RULE THAT DRIVES EVERY MEASURE BELOW
+// The marts hold MEDIANS. Medians cannot be summed or averaged: the median of
+// two suburbs is not the average of their medians. So:
+//   * one row in context      -> show the median as published;
+//   * several rows in context -> show a WEIGHTED AVERAGE of medians (weights =
+//     RTA new bonds or Domain new listings) and label it "≈" / "weighted" in the visual.
+// And 'All dwellings' rows must never be added to the per-dwelling rows (double count).
+// =============================================================================
+
+
+// ------------------------------------------------------------------ helpers
+// Lag what-if parameter: Modeling > New parameter > Numeric range, name "Max RTA Lag",
+// 0 to 2, increment 1, default 0. That creates table 'Max RTA Lag' and this measure:
+Max RTA Lag Value = SELECTEDVALUE ( 'Max RTA Lag'[Max RTA Lag], 0 )
+
+
+// ================================================================== RTA (signed rents)
+
+Signed Rent =
+// Median weekly rent of new tenancies (RTA). Weighted by new bonds when >1 row is in context.
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( RtaTrend, DimDwelling[dwelling] = "All dwellings" ),
+        RtaTrend
+    )
+VAR _t = FILTER ( _rows, NOT ISBLANK ( RtaTrend[median_weekly_rent] ) )
+RETURN
+    IF (
+        COUNTROWS ( _t ) = 1,
+        MAXX ( _t, RtaTrend[median_weekly_rent] ),
+        DIVIDE (
+            SUMX ( _t, RtaTrend[median_weekly_rent] * RtaTrend[new_bonds] ),
+            SUMX ( _t, RtaTrend[new_bonds] )
+        )
+    )
+
+Signed Rent LY =
+VAR _q = MAX ( DimQuarter[quarter_end] )
+RETURN
+    CALCULATE ( [Signed Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = EOMONTH ( _q, -12 ) )
+
+Signed Rent YoY % =
+DIVIDE ( [Signed Rent] - [Signed Rent LY], [Signed Rent LY] )
+
+QLD Median Rent =
+// Queensland-wide median for the same quarter and dwelling (needs one quarter in context).
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( RtaTrend, DimDwelling[dwelling] = "All dwellings", REMOVEFILTERS ( DimSuburb ) ),
+        CALCULATETABLE ( RtaTrend, REMOVEFILTERS ( DimSuburb ) )
+    )
+RETURN
+    IF (
+        HASONEVALUE ( DimQuarter[quarter_end] ) && COUNTROWS ( DISTINCT ( SELECTCOLUMNS ( _rows, "d", RtaTrend[dwelling] ) ) ) = 1,
+        MAXX ( _rows, RtaTrend[qld_median_weekly_rent] )
+    )
+
+Premium vs QLD % =
+DIVIDE ( [Signed Rent], [QLD Median Rent] ) - 1
+
+New Bonds =
+// New tenancies signed in the period (no double count of 'All dwellings').
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( RtaTrend, DimDwelling[dwelling] = "All dwellings" ),
+        RtaTrend
+    )
+RETURN SUMX ( _rows, RtaTrend[new_bonds] )
+
+
+// ================================================================== Domain vs RTA (gap)
+
+Asking Rent =
+// Median asking rent of NEW listings (Domain), weighted by listings when >1 row.
+VAR _rows =
+    FILTER (
+        IF (
+            "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+            CALCULATETABLE ( Gap, DimDwelling[dwelling] = "All dwellings" ),
+            Gap
+        ),
+        Gap[rta_quarters_behind] <= [Max RTA Lag Value]
+    )
+RETURN
+    IF (
+        COUNTROWS ( _rows ) = 1,
+        MAXX ( _rows, Gap[median_asking_rent] ),
+        DIVIDE ( SUMX ( _rows, Gap[median_asking_rent] * Gap[n_new_listings] ), SUMX ( _rows, Gap[n_new_listings] ) )
+    )
+
+Gap % =
+// How far asking rents sit above signed rents.
+// 'All dwellings' (or no dwelling filter) = MIX-ADJUSTED: per-dwelling gaps weighted by RTA
+// new bonds, so a suburb listing mostly 3-bed houses is not compared with RTA's all-dwelling mix.
+// For one suburb this equals gap_pct_mix_adjusted in the mart.
+VAR _lag = [Max RTA Lag Value]
+VAR _rows =
+    FILTER (
+        IF (
+            "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+            CALCULATETABLE ( Gap, REMOVEFILTERS ( DimDwelling ) ),
+            Gap
+        ),
+        Gap[dwelling] <> "All dwellings"
+            && NOT ISBLANK ( Gap[gap_pct] )
+            && Gap[rta_quarters_behind] <= _lag
+    )
+RETURN
+    IF (
+        COUNTROWS ( _rows ) = 1,
+        MAXX ( _rows, Gap[gap_pct] ) / 100,
+        DIVIDE ( SUMX ( _rows, Gap[gap_pct] * Gap[rta_new_bonds] ), SUMX ( _rows, Gap[rta_new_bonds] ) ) / 100
+    )
+
+New Listings =
+VAR _rows =
+    FILTER (
+        IF (
+            "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+            CALCULATETABLE ( Gap, DimDwelling[dwelling] = "All dwellings" ),
+            Gap
+        ),
+        Gap[rta_quarters_behind] <= [Max RTA Lag Value]
+    )
+RETURN SUMX ( _rows, Gap[n_new_listings] )
+
+Low Sample Rows =
+// Show next to gap visuals: >0 means some cells rest on <5 listings or <10 bonds.
+COUNTROWS ( FILTER ( Gap, Gap[is_low_sample] && Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) )
+
+RTA Quarter Compared =
+// Text for card/tooltip: which RTA quarter the asking rents are compared with.
+VAR _q = MAXX ( FILTER ( Gap, Gap[rta_quarters_behind] <= [Max RTA Lag Value] ), Gap[rta_quarter_end] )
+RETURN IF ( NOT ISBLANK ( _q ), FORMAT ( _q, "mmm" ) & " Qtr " & YEAR ( _q ) )
+
+
+// ================================================================== Leasing speed
+
+Listings Closed =
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( Velocity, DimDwelling[dwelling] = "All dwellings" ),
+        Velocity
+    )
+RETURN SUMX ( _rows, Velocity[n_listings_closed] )
+
+Days on Market =
+// Median days on market; weighted average of medians (≈) when >1 row.
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( Velocity, DimDwelling[dwelling] = "All dwellings" ),
+        Velocity
+    )
+RETURN
+    IF (
+        COUNTROWS ( _rows ) = 1,
+        MAXX ( _rows, Velocity[median_days_on_market] ),
+        DIVIDE ( SUMX ( _rows, Velocity[median_days_on_market] * Velocity[n_listings_closed] ),
+                 SUMX ( _rows, Velocity[n_listings_closed] ) )
+    )
+
+Price Cut % =
+VAR _rows =
+    IF (
+        "All dwellings" IN VALUES ( DimDwelling[dwelling] ),
+        CALCULATETABLE ( Velocity, DimDwelling[dwelling] = "All dwellings" ),
+        Velocity
+    )
+RETURN
+    DIVIDE ( SUMX ( _rows, Velocity[pct_with_price_cut] * Velocity[n_listings_closed] ),
+             SUMX ( _rows, Velocity[n_listings_closed] ) ) / 100
+
+
+// ================================================================== Labels
+
+Data Banner =
+IF (
+    MAX ( Manifest[domain_data_is_synthetic] ),
+    "DEMO — Domain listings are synthetic. RTA figures are real.",
+    "Live Domain snapshots + RTA bond data"
+)
+
+Data As Of =
+"RTA data to " & FORMAT ( MAX ( Manifest[rta_latest_quarter] ), "mmm yyyy" )
+    & "  ·  exported " & LEFT ( MAX ( Manifest[exported_at] ), 10 )
+
+Source Credit =
+"Source: Residential Tenancies Authority (Qld), CC BY 4.0; Domain listings"

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "t_league",
+  "position": {
+    "x": 16,
+    "y": 168,
+    "z": 9000,
+    "height": 510,
+    "width": 640,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DimSuburb"
+                    }
+                  },
+                  "Property": "suburb"
+                }
+              },
+              "queryRef": "DimSuburb.suburb",
+              "nativeQueryRef": "suburb",
+              "displayName": "Suburb"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest Rent"
+                }
+              },
+              "queryRef": "_Measures.Latest Rent",
+              "nativeQueryRef": "Latest Rent"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest YoY %"
+                }
+              },
+              "queryRef": "_Measures.Latest YoY %",
+              "nativeQueryRef": "Latest YoY %",
+              "displayName": "1-yr change"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest 5y %"
+                }
+              },
+              "queryRef": "_Measures.Latest 5y %",
+              "nativeQueryRef": "Latest 5y %",
+              "displayName": "5-yr change"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "QLD Rank"
+                }
+              },
+              "queryRef": "_Measures.QLD Rank",
+              "nativeQueryRef": "QLD Rank"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest New Bonds"
+                }
+              },
+              "queryRef": "_Measures.Latest New Bonds",
+              "nativeQueryRef": "Latest New Bonds",
+              "displayName": "New bonds"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Latest YoY %"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Suburb league table (sort by any column)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

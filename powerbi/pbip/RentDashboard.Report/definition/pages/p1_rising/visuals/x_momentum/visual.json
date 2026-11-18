@@ -1,0 +1,118 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "x_momentum",
+  "position": {
+    "x": 672,
+    "y": 168,
+    "z": 10000,
+    "height": 510,
+    "width": 592,
+    "tabOrder": 10000
+  },
+  "visual": {
+    "visualType": "scatterChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DimSuburb"
+                    }
+                  },
+                  "Property": "suburb"
+                }
+              },
+              "queryRef": "DimSuburb.suburb",
+              "nativeQueryRef": "suburb",
+              "active": true
+            }
+          ]
+        },
+        "X": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest 5y %"
+                }
+              },
+              "queryRef": "_Measures.Latest 5y %",
+              "nativeQueryRef": "Latest 5y %",
+              "active": true,
+              "displayName": "5-yr change"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Latest YoY %"
+                }
+              },
+              "queryRef": "_Measures.Latest YoY %",
+              "nativeQueryRef": "Latest YoY %",
+              "displayName": "1-yr change"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "dataPoint": [
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1F6FB2'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Momentum: 5-year vs 1-year change in signed rent'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

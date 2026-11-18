@@ -1,0 +1,54 @@
+table DimQuarter
+	lineageTag: 64478842-3486-5662-9e2a-2c041acc081a
+
+	column quarter_end
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 431e0ff4-4625-5d0b-a685-2d5414305f3e
+		summarizeBy: none
+		sourceColumn: quarter_end
+
+		annotation SummarizationSetBy = User
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column year
+		dataType: int64
+		lineageTag: 25943ae4-2ce7-568c-af24-fb89714415d2
+		summarizeBy: none
+		sourceColumn: year
+
+		annotation SummarizationSetBy = User
+
+	column quarter_label
+		dataType: string
+		lineageTag: 6c8e1f68-dc5c-526e-8a3b-70ba743b196d
+		summarizeBy: none
+		sourceColumn: quarter_label
+		sortByColumn: quarter_index
+
+		annotation SummarizationSetBy = User
+
+	column quarter_index
+		dataType: int64
+		isHidden
+		lineageTag: 869a48f0-897e-5829-aacc-2f928e852069
+		summarizeBy: none
+		sourceColumn: quarter_index
+
+		annotation SummarizationSetBy = User
+
+	partition DimQuarter = m
+		mode: import
+		source =
+				let
+				    All   = List.Distinct(RtaTrend[quarter_end] & Gap[quarter_end] & Velocity[quarter_end]),
+				    Base  = Table.FromList(All, Splitter.SplitByNothing(), type table [quarter_end = date]),
+				    Year  = Table.AddColumn(Base, "year", each Date.Year([quarter_end]), Int64.Type),
+				    Label = Table.AddColumn(Year, "quarter_label", each Date.ToText([quarter_end], [Format = "MMM", Culture = "en-AU"]) & " Qtr " & Text.From(Date.Year([quarter_end])), type text),
+				    Index = Table.AddColumn(Label, "quarter_index", each Date.Year([quarter_end]) * 4 + Date.QuarterOfYear([quarter_end]), Int64.Type)
+				in
+				    Index
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: mart_rent_gap_suburb_quarter
+    description: >
+      Core question of the project: how far do asking rents (Domain) sit above signed rents (RTA)?
+      Grain: tracked suburb x quarter x RTA dwelling (+ 'All dwellings'). Uses an as-of join to the
+      latest RTA quarter; rta_quarters_behind = 0 means a like-for-like quarter.
+    columns:
+      - name: suburb
+        data_tests: [not_null]
+      - name: gap_pct
+        description: (median asking / median signed - 1) x 100. Positive = landlords asking above what tenants sign for.
+      - name: gap_pct_mix_adjusted
+        description: >
+          'All dwellings' rows only. Per-dwelling gap_pct weighted by RTA new bonds, so a suburb's headline
+          gap is not distorted by Domain listing a different mix of dwellings than RTA records.
+      - name: rta_quarters_behind
+        description: Quarters between the Domain quarter and the RTA quarter it is compared with.
+      - name: is_low_sample
+        description: Fewer than 5 new listings or fewer than 10 RTA new bonds — treat with caution.
+
+  - name: mart_rta_suburb_latest
+    description: Latest RTA quarter for every QLD suburb x dwelling, with 1-year and 5-year change and QLD rank.
+    columns:
+      - name: area_name
+        data_tests: [not_null]
+      - name: median_weekly_rent
+        data_tests: [not_null]
+
+  - name: mart_listing_velocity_suburb_month
+    description: Leasing speed per tracked suburb and month (based on listings that left the market).
+    columns:
+      - name: n_listings_closed
+        data_tests: [not_null]
+
+  - name: mart_rta_suburb_trend
+    description: >
+      Quarterly RTA history per QLD suburb x dwelling with the Queensland median alongside
+      (premium_vs_qld_pct). Grain: area_name x dwelling x quarter_end.
+    columns:
+      - name: area_name
+        data_tests: [not_null]
+      - name: location_label
+        description: Geocodable text for Power BI map visuals.
