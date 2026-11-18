@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Source Credit"
+                  "Property": "Source Credit (RTA)"
                 }
               },
-              "queryRef": "_Measures.Source Credit",
-              "nativeQueryRef": "Source Credit"
+              "queryRef": "_Measures.Source Credit (RTA)",
+              "nativeQueryRef": "Source Credit (RTA)"
             }
           ]
         }

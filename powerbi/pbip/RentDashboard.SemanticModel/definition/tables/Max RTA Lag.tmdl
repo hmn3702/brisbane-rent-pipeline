@@ -1,9 +1,8 @@
 table 'Max RTA Lag'
-	lineageTag: dacb90d7-e648-5f92-a8db-c005493963cb
-
+	lineageTag: 1c45dd48-fbf7-5740-8e84-c72df15126e7
 	column 'Max RTA Lag'
 		dataType: int64
-		lineageTag: 032efa22-3acc-52b0-b7a8-b0d6a440b389
+		lineageTag: b9c68daf-4e20-5f3a-bc59-687270a72994
 		summarizeBy: none
 		isNameInferred
 		sourceColumn: [Max RTA Lag]
@@ -12,5 +11,6 @@ table 'Max RTA Lag'
 
 	partition 'Max RTA Lag' = calculated
 		mode: import
-		source = SELECTCOLUMNS ( GENERATESERIES ( 0, 2, 1 ), "Max RTA Lag", [Value] )
+		source =
+				SELECTCOLUMNS ( GENERATESERIES ( 0, 2, 1 ), "Max RTA Lag", [Value] )
 

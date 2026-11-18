@@ -1,6 +1,5 @@
 table RtaLatest
 	lineageTag: d51e9d84-68fb-5ffd-a1b4-a91e6d721671
-
 	column area_name
 		dataType: string
 		isHidden
@@ -161,4 +160,3 @@ table RtaLatest
 				    Typed
 
 	annotation PBI_ResultType = Table
-

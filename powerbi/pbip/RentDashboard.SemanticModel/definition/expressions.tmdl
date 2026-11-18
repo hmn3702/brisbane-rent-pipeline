@@ -2,4 +2,3 @@ expression DataFolder = "E:\project\QLD-rent-analysis\rent-pipeline\powerbi\data
 	lineageTag: 909209aa-4259-5cae-8683-eadd14faee0d
 
 	annotation PBI_ResultType = Text
-

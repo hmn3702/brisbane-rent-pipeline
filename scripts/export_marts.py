@@ -24,6 +24,7 @@ MARTS = [
     "mart_rta_suburb_latest",
     "mart_rta_suburb_trend",
     "mart_listing_velocity_suburb_month",
+    "mart_rta_seasonality",
 ]
 
 

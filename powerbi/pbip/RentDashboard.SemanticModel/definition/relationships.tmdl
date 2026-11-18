@@ -1,44 +1,51 @@
-relationship 1b08c682-cb88-5fce-9727-1e953db064f6
+relationship 93081c61-4584-5fec-9a6e-6ad030a7111c
 	fromColumn: RtaTrend.area_name
 	toColumn: DimSuburb.area_name
 
-relationship 09e747a2-706c-5963-972f-eaf1c4b76855
+relationship 7ad74ac1-56dd-5e66-9cd6-1fe6ae46c039
 	fromColumn: RtaLatest.area_name
 	toColumn: DimSuburb.area_name
 
-relationship 24a1fd89-11b0-5b97-a5d4-b05ca73cf263
+relationship 4c796ef4-434c-5f51-b55b-6f8199f86f10
 	fromColumn: Gap.rta_suburb
 	toColumn: DimSuburb.area_name
 
-relationship fc78702a-f227-52a2-aa18-aee47ee52b79
+relationship 1c9657a0-8f6b-53f1-859c-9dae4c42b68f
 	fromColumn: Velocity.rta_suburb
 	toColumn: DimSuburb.area_name
 
-relationship 28fca423-c61a-5f16-a547-8ac9cf994d1a
+relationship 347d5060-ffc6-5ea1-99ef-13b115cc90bc
 	fromColumn: RtaTrend.dwelling
 	toColumn: DimDwelling.dwelling
 
-relationship 536fd4dc-3498-59cf-ad26-bcbfb6234ed5
+relationship 4541a797-40b4-527c-a426-6a19a58b1264
 	fromColumn: RtaLatest.dwelling
 	toColumn: DimDwelling.dwelling
 
-relationship 0f75e417-bfa4-5c00-883b-78ca9827ce55
+relationship 989e1c84-2ebd-5c94-9e03-6797e4e47bbb
 	fromColumn: Gap.dwelling
 	toColumn: DimDwelling.dwelling
 
-relationship 62f8a95f-7c02-561c-97b6-f7b61f9408af
+relationship 65c46c81-1120-5372-99f9-d589ec7ab4b0
 	fromColumn: Velocity.dwelling
 	toColumn: DimDwelling.dwelling
 
-relationship 45ad2c35-fff7-586d-aef4-58af40503763
+relationship 0c1f14cd-38a5-5abf-83f1-17e9a8717594
 	fromColumn: RtaTrend.quarter_end
 	toColumn: DimQuarter.quarter_end
 
-relationship f07f1109-b7cd-54b3-b207-28c764611b14
+relationship 3a987d46-d12c-5a03-a72c-82ed76c0a3c5
 	fromColumn: Gap.quarter_end
 	toColumn: DimQuarter.quarter_end
 
-relationship 53914c63-04a9-55f4-a172-e500da0268cf
+relationship 7eceae99-7f1a-55a1-8e9c-455a3555bf7a
 	fromColumn: Velocity.quarter_end
 	toColumn: DimQuarter.quarter_end
 
+relationship af2c44a4-2a7c-5aba-a4d1-64315fc3c7a1
+	fromColumn: Seasonality.area_name
+	toColumn: DimSuburb.area_name
+
+relationship e7baace6-3455-5b50-b64f-542537028374
+	fromColumn: Seasonality.dwelling
+	toColumn: DimDwelling.dwelling

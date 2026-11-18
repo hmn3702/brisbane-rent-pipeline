@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "b_ask_vs_signed",
   "position": {
     "x": 16,
@@ -27,8 +27,7 @@
                 }
               },
               "queryRef": "DimSuburb.suburb",
-              "nativeQueryRef": "suburb",
-              "active": true
+              "nativeQueryRef": "suburb"
             }
           ]
         },
@@ -80,12 +79,16 @@
             },
             "direction": "Descending"
           }
-        ]
+        ],
+        "isDefaultSort": false
       }
     },
     "objects": {
       "dataPoint": [
         {
+          "selector": {
+            "metadata": "_Measures.Asking Rent"
+          },
           "properties": {
             "fill": {
               "solid": {
@@ -98,12 +101,12 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Asking Rent"
           }
         },
         {
+          "selector": {
+            "metadata": "_Measures.Signed Rent (compared)"
+          },
           "properties": {
             "fill": {
               "solid": {
@@ -116,9 +119,6 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Signed Rent (compared)"
           }
         }
       ]

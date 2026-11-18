@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "l_dom",
   "position": {
     "x": 16,
@@ -28,7 +28,6 @@
               },
               "queryRef": "Velocity.month_start",
               "nativeQueryRef": "month_start",
-              "active": true,
               "displayName": "Month"
             }
           ]
@@ -56,6 +55,9 @@
     "objects": {
       "dataPoint": [
         {
+          "selector": {
+            "metadata": "_Measures.Days on Market"
+          },
           "properties": {
             "fill": {
               "solid": {
@@ -68,9 +70,6 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Days on Market"
           }
         }
       ]

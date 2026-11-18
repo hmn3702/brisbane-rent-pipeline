@@ -23,6 +23,15 @@ and do suburbs that ask more lease more slowly?
   Comparing a suburb's apartment and house listings against that "All dwellings" median would make asking
   rents look far more inflated than they are. The project compares like with like instead, dwelling type
   by dwelling type, and weights by RTA's mix (see *mix-adjusted gap* below).
+- **The cheapest quarter to sign is June; the dearest is March.** For a two-bedroom flat in Queensland,
+  signed rents run 2.3% above their trend in the March quarter (t = 6.1 across 14 years) and 2.0% below it
+  in the June quarter. That 4.3-point swing is worth about $1,500 a year at today's $665 median.
+  For three-bedroom houses the swing is much smaller (about 1.6 points, cheapest again in June).
+- **The March premium is shrinking.** For two-bedroom flats it averaged +3.1% in 2012–2019 and +1.5% since 2020.
+- **March is the student intake.** New leases jump in the March quarter in Springfield Central (+85% vs trend),
+  Sippy Downs (+74%), St Lucia (+73%) and Kelvin Grove (+57%). These are the suburbs around university campuses.
+  Part of the March rent premium may therefore be a location-mix effect (more leases signed in dearer inner
+  suburbs) rather than every landlord charging more. RTA data alone can't separate the two.
 
 > **Status:** the asking-rent side (Domain listings API) is waiting on API access approval. Until then,
 > pages 3–4 of the dashboard run on **synthetic listings**. These are flagged in the data
@@ -36,7 +45,7 @@ flowchart LR
     B[RTA bond statistics<br/>xlsx, quarterly] -->|ingest_rta.py| R
     R --> S[dbt staging]
     S --> I[dbt intermediate<br/>listing lifecycle,<br/>suburb x quarter]
-    I --> M[dbt marts<br/>rent gap, league table,<br/>trend, leasing speed]
+    I --> M[dbt marts<br/>rent gap, league table,<br/>trend, leasing speed,<br/>seasonality]
     M -->|export_marts.py| P[Power BI<br/>PBIP: TMDL + PBIR]
     G[GitHub Actions<br/>daily pipeline] -.schedules.-> A
     G -.-> B
@@ -47,8 +56,8 @@ flowchart LR
 |---|---|
 | Ingestion | Python (requests, openpyxl), OAuth client credentials, retries, idempotent upserts |
 | Storage | PostgreSQL (hosted on Neon's free tier): raw JSONB snapshots, a long-format RTA table (~518k suburb and state rows), and an ingest log |
-| Transformation | dbt Core: 3 layers, 8 models, 22 data tests |
-| Testing | 9 pytest tests (API mocked, real-workbook checks) and 22 dbt schema and singular tests |
+| Transformation | dbt Core: 3 layers, 10 models, 28 data tests |
+| Testing | 12 pytest tests (API mocked, real-workbook checks) and 28 dbt schema and singular tests |
 | BI | Power BI Project (TMDL semantic model + PBIR report), generated from `powerbi/build_pbip.py` |
 | CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres |
 | Orchestration | One scheduled GitHub Actions workflow, run end to end against a hosted Postgres (Neon): RTA reloaded only when the workbook changes, then Domain snapshot, `dbt build`, mart export and a database-size check |
@@ -89,6 +98,15 @@ validated against Microsoft's published JSON schemas. The dashboard can be diffe
 like any other code. The measures never add up or average medians: one row in context shows the published
 median, and several rows show a weighted average.
 
+**7. Seasonality without fooling yourself.**
+`int_rta__seasonal_deviation` compares each quarter with a centred 2×4 moving average, which removes the
+trend (the Queensland median rose from $342 to $650 a week since 2012) but keeps the seasonal swing. A quarter only gets a value when the
+two quarters either side exist (no gaps bridged), the cell has at least 10 new bonds, and the deviation is
+within ±40%. That last rule came from a failing test: 55 rows in towns such as Moranbah (subsidised mining
+housing) swung wildly. They are flagged as outliers and excluded, rather than widening the test.
+`mart_rta_seasonality` reports the mean deviation per quarter with a t-statistic, and only calls a quarter
+significant with 5+ years of data and |t| ≥ 2.
+
 ## Dashboard
 
 | | |
@@ -97,6 +115,10 @@ median, and several rows show a weighted average.
 | **Trend vs Queensland:** a suburb's signed rent against the QLD median since 2017 | **Asking vs signed:** mix-adjusted gap by suburb and dwelling (synthetic listings for now) |
 | ![How fast places lease (demo data)](docs/img/p4_speed.png) | |
 | **Leasing speed:** days on market and price cuts (synthetic listings for now) | |
+
+![When to sign a lease](docs/img/p5_season.png)
+
+**When to sign a lease:** signed rent and new leases against trend, by quarter, for Queensland and a chosen suburb, plus the March lease surge by suburb. Real RTA data only.
 
 ## Repository layout
 

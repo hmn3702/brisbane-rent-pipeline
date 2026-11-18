@@ -1,9 +1,8 @@
 table Velocity
-	lineageTag: 2fc14ec6-fb77-53a8-8b8c-6fc6e3145883
-
+	lineageTag: 869a48f0-897e-5829-aacc-2f928e852069
 	column suburb
 		dataType: string
-		lineageTag: 1d6388ed-4f06-554b-9b21-b920c2106e75
+		lineageTag: ab534364-e6b0-5928-b2f3-316baa35aa12
 		summarizeBy: none
 		sourceColumn: suburb
 
@@ -12,7 +11,7 @@ table Velocity
 	column rta_suburb
 		dataType: string
 		isHidden
-		lineageTag: 894fc4ec-c3ff-5abb-8bb2-988ee9cb2fe1
+		lineageTag: 00bfbda1-d277-5c77-98ac-eeb1b3b9fd09
 		summarizeBy: none
 		sourceColumn: rta_suburb
 
@@ -21,7 +20,7 @@ table Velocity
 	column month_start
 		dataType: dateTime
 		formatString: yyyy-mm-dd
-		lineageTag: b0bad615-002e-55ee-8bbc-798f78167a66
+		lineageTag: 9ea2614b-a007-59a5-96af-7fd724cb504a
 		summarizeBy: none
 		sourceColumn: month_start
 
@@ -31,9 +30,9 @@ table Velocity
 
 	column quarter_end
 		dataType: dateTime
-		isHidden
 		formatString: yyyy-mm-dd
-		lineageTag: 851b9d0f-cc6a-5907-9ed6-a13706e933f9
+		isHidden
+		lineageTag: 1e346dd4-179e-5105-a8f6-2c50e7ec65ac
 		summarizeBy: none
 		sourceColumn: quarter_end
 
@@ -44,7 +43,7 @@ table Velocity
 	column dwelling
 		dataType: string
 		isHidden
-		lineageTag: f98d61e9-24f3-57f3-b9f2-7aa51291ad4d
+		lineageTag: 306d25de-6be7-57b5-b670-190c062df983
 		summarizeBy: none
 		sourceColumn: dwelling
 
@@ -52,7 +51,7 @@ table Velocity
 
 	column n_listings_closed
 		dataType: int64
-		lineageTag: d88df9b0-cf55-52bf-ad4f-bf22378b05e9
+		lineageTag: 71775f7e-4ad9-5f73-a04f-46dbe0a7f312
 		summarizeBy: none
 		sourceColumn: n_listings_closed
 
@@ -60,7 +59,7 @@ table Velocity
 
 	column median_days_on_market
 		dataType: double
-		lineageTag: 594e40a8-2981-5a21-82ec-862508518c51
+		lineageTag: 431e0ff4-4625-5d0b-a685-2d5414305f3e
 		summarizeBy: none
 		sourceColumn: median_days_on_market
 
@@ -68,7 +67,7 @@ table Velocity
 
 	column pct_with_price_cut
 		dataType: double
-		lineageTag: 2297586b-d114-58fe-a74c-d29bc9442b54
+		lineageTag: 25943ae4-2ce7-568c-af24-fb89714415d2
 		summarizeBy: none
 		sourceColumn: pct_with_price_cut
 
@@ -76,7 +75,7 @@ table Velocity
 
 	column median_final_asking_rent
 		dataType: double
-		lineageTag: 66a7f40e-fa69-5d90-8d00-26ce4d526656
+		lineageTag: 6c8e1f68-dc5c-526e-8a3b-70ba743b196d
 		summarizeBy: none
 		sourceColumn: median_final_asking_rent
 
@@ -102,4 +101,3 @@ table Velocity
 				    Typed
 
 	annotation PBI_ResultType = Table
-

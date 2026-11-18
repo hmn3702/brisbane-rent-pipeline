@@ -9,13 +9,12 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["DataFolder", "Gap", "RtaLatest", "RtaTrend", "Velocity", "Manifest", "DimSuburb", "DimDwelling", "DimQuarter"]
-
-annotation PBI_ProTooling = ["DevMode"]
+annotation PBI_QueryOrder = ["DataFolder", "Gap", "RtaLatest", "RtaTrend", "Seasonality", "Velocity", "Manifest", "DimSuburb", "DimDwelling", "DimQuarter"]
 
 ref table Gap
 ref table RtaLatest
 ref table RtaTrend
+ref table Seasonality
 ref table Velocity
 ref table Manifest
 ref table DimSuburb
@@ -23,6 +22,3 @@ ref table DimDwelling
 ref table DimQuarter
 ref table 'Max RTA Lag'
 ref table _Measures
-
-ref cultureInfo en-US
-

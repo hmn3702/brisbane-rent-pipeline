@@ -1,0 +1,131 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "c_rent_season",
+  "position": {
+    "x": 16,
+    "y": 168,
+    "z": 10000,
+    "height": 250,
+    "width": 620,
+    "tabOrder": 10000
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Seasonality"
+                    }
+                  },
+                  "Property": "quarter_label"
+                }
+              },
+              "queryRef": "Seasonality.quarter_label",
+              "nativeQueryRef": "quarter_label"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "QLD Rent vs Trend"
+                }
+              },
+              "queryRef": "_Measures.QLD Rent vs Trend",
+              "nativeQueryRef": "QLD Rent vs Trend"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Suburb Rent vs Trend"
+                }
+              },
+              "queryRef": "_Measures.Suburb Rent vs Trend",
+              "nativeQueryRef": "Suburb Rent vs Trend"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "dataPoint": [
+        {
+          "selector": {
+            "metadata": "_Measures.QLD Rent vs Trend"
+          },
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#9CA3AF'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "selector": {
+            "metadata": "_Measures.Suburb Rent vs Trend"
+          },
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1F6FB2'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Signed rent vs trend by quarter: Queensland vs suburb'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

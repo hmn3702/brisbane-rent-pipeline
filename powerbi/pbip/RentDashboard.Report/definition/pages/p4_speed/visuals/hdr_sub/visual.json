@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Listings leaving Domain = leased or withdrawn · listings live before tracking began are excluded",
+                    "value": "Listings leaving Domain = leased or withdrawn \u00b7 listings live before tracking began are excluded",
                     "textStyle": {
                       "fontSize": "10pt",
                       "color": "#4B5563"

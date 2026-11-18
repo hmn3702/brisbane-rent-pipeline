@@ -1,6 +1,5 @@
 table Gap
 	lineageTag: 359dc4a1-2116-5097-9d16-4a2abafbb41a
-
 	column suburb
 		dataType: string
 		lineageTag: 424cb5d3-ddbe-5620-b3f4-0550cb526cdb
@@ -20,8 +19,8 @@ table Gap
 
 	column quarter_end
 		dataType: dateTime
-		isHidden
 		formatString: yyyy-mm-dd
+		isHidden
 		lineageTag: acd82c3d-c7e7-5da4-bb35-a4d793db2ba8
 		summarizeBy: none
 		sourceColumn: quarter_end
@@ -147,4 +146,3 @@ table Gap
 				    Typed
 
 	annotation PBI_ResultType = Table
-

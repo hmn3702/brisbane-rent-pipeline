@@ -1,0 +1,180 @@
+table Seasonality
+	lineageTag: 5849e97d-d4e9-5476-8064-9599feb55079
+	column geo_level
+		dataType: string
+		isHidden
+		lineageTag: 1d6388ed-4f06-554b-9b21-b920c2106e75
+		summarizeBy: none
+		sourceColumn: geo_level
+
+		annotation SummarizationSetBy = User
+
+	column area_name
+		dataType: string
+		isHidden
+		lineageTag: 894fc4ec-c3ff-5abb-8bb2-988ee9cb2fe1
+		summarizeBy: none
+		sourceColumn: area_name
+
+		annotation SummarizationSetBy = User
+
+	column area_label
+		dataType: string
+		lineageTag: b0bad615-002e-55ee-8bbc-798f78167a66
+		summarizeBy: none
+		sourceColumn: area_label
+
+		annotation SummarizationSetBy = User
+
+	column dwelling
+		dataType: string
+		isHidden
+		lineageTag: 851b9d0f-cc6a-5907-9ed6-a13706e933f9
+		summarizeBy: none
+		sourceColumn: dwelling
+
+		annotation SummarizationSetBy = User
+
+	column quarter_of_year
+		dataType: int64
+		isHidden
+		lineageTag: f98d61e9-24f3-57f3-b9f2-7aa51291ad4d
+		summarizeBy: none
+		sourceColumn: quarter_of_year
+
+		annotation SummarizationSetBy = User
+
+	column quarter_label
+		dataType: string
+		sortByColumn: quarter_of_year
+		lineageTag: d88df9b0-cf55-52bf-ad4f-bf22378b05e9
+		summarizeBy: none
+		sourceColumn: quarter_label
+
+		annotation SummarizationSetBy = User
+
+	column n_years_rent
+		dataType: int64
+		lineageTag: 594e40a8-2981-5a21-82ec-862508518c51
+		summarizeBy: none
+		sourceColumn: n_years_rent
+
+		annotation SummarizationSetBy = User
+
+	column n_years_bonds
+		dataType: int64
+		lineageTag: 2297586b-d114-58fe-a74c-d29bc9442b54
+		summarizeBy: none
+		sourceColumn: n_years_bonds
+
+		annotation SummarizationSetBy = User
+
+	column rent_dev_pct
+		dataType: double
+		lineageTag: 66a7f40e-fa69-5d90-8d00-26ce4d526656
+		summarizeBy: none
+		sourceColumn: rent_dev_pct
+
+		annotation SummarizationSetBy = User
+
+	column rent_t_stat
+		dataType: double
+		lineageTag: 2fc14ec6-fb77-53a8-8b8c-6fc6e3145883
+		summarizeBy: none
+		sourceColumn: rent_t_stat
+
+		annotation SummarizationSetBy = User
+
+	column is_rent_significant
+		dataType: boolean
+		lineageTag: 45560b9d-b618-5556-a8f8-d5942b10543c
+		summarizeBy: none
+		sourceColumn: is_rent_significant
+
+		annotation SummarizationSetBy = User
+
+	column pct_years_above_trend
+		dataType: double
+		lineageTag: a79b6b5c-1534-5460-b20e-76073ac27c7a
+		summarizeBy: none
+		sourceColumn: pct_years_above_trend
+
+		annotation SummarizationSetBy = User
+
+	column rent_dev_pct_before_2020
+		dataType: double
+		lineageTag: 44d46ca7-1a3c-525f-a44b-fa668e7e8ea5
+		summarizeBy: none
+		sourceColumn: rent_dev_pct_before_2020
+
+		annotation SummarizationSetBy = User
+
+	column rent_dev_pct_2020_on
+		dataType: double
+		lineageTag: 18aab7b9-59c1-5be2-91b0-ee7c3a79f65f
+		summarizeBy: none
+		sourceColumn: rent_dev_pct_2020_on
+
+		annotation SummarizationSetBy = User
+
+	column bonds_dev_pct
+		dataType: double
+		lineageTag: d41e1401-cff9-5268-a6fa-6fc23759a526
+		summarizeBy: none
+		sourceColumn: bonds_dev_pct
+
+		annotation SummarizationSetBy = User
+
+	column avg_new_bonds
+		dataType: double
+		lineageTag: ca1d7987-6fdc-5a59-918e-c6370d68b384
+		summarizeBy: none
+		sourceColumn: avg_new_bonds
+
+		annotation SummarizationSetBy = User
+
+	column cheapest_rank
+		dataType: int64
+		lineageTag: e835c011-13e8-512a-9b2c-9fcc498606eb
+		summarizeBy: none
+		sourceColumn: cheapest_rank
+
+		annotation SummarizationSetBy = User
+
+	column is_tracked
+		dataType: boolean
+		lineageTag: b8000c6c-6539-5745-92a6-555e6b4a6ae4
+		summarizeBy: none
+		sourceColumn: is_tracked
+
+		annotation SummarizationSetBy = User
+
+	partition Seasonality = m
+		mode: import
+		source =
+				let
+				    Source  = Csv.Document(File.Contents(DataFolder & "\mart_rta_seasonality.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed   = Table.TransformColumnTypes(Headers, {
+				        {"geo_level", type text},
+				        {"area_name", type text},
+				        {"area_label", type text},
+				        {"dwelling", type text},
+				        {"quarter_of_year", Int64.Type},
+				        {"quarter_label", type text},
+				        {"n_years_rent", Int64.Type},
+				        {"n_years_bonds", Int64.Type},
+				        {"rent_dev_pct", type number},
+				        {"rent_t_stat", type number},
+				        {"is_rent_significant", type logical},
+				        {"pct_years_above_trend", type number},
+				        {"rent_dev_pct_before_2020", type number},
+				        {"rent_dev_pct_2020_on", type number},
+				        {"bonds_dev_pct", type number},
+				        {"avg_new_bonds", type number},
+				        {"cheapest_rank", Int64.Type},
+				        {"is_tracked", type logical}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

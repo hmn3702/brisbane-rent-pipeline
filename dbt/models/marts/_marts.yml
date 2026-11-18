@@ -43,3 +43,21 @@ models:
         data_tests: [not_null]
       - name: location_label
         description: Geocodable text for Power BI map visuals.
+
+  - name: mart_rta_seasonality
+    description: >
+      Is there a cheapest quarter to sign a lease? Average detrended rent and new-bond deviation by quarter of
+      year for every QLD suburb and Queensland as a whole, per dwelling, with a t-statistic, a before/after-2020
+      split, and cheapest_rank (1 = cheapest quarter). Grain: geo_level x area_name x dwelling x quarter_of_year.
+    columns:
+      - name: rent_dev_pct
+        description: Average % the signed median rent sits above (+) or below (-) its trend in this quarter.
+      - name: rent_t_stat
+        description: Mean deviation / standard error across years. |t| >= 2 with >= 5 years flags is_rent_significant.
+      - name: bonds_dev_pct
+        description: Average % new bonds (leases signed) sit above or below trend; the student intake shows up here.
+      - name: quarter_of_year
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]

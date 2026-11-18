@@ -1,9 +1,8 @@
 table DimSuburb
-	lineageTag: 00bfbda1-d277-5c77-98ac-eeb1b3b9fd09
-
+	lineageTag: f030f536-4829-5c69-b20c-67831909b5ef
 	column area_name
 		dataType: string
-		lineageTag: ca1d7987-6fdc-5a59-918e-c6370d68b384
+		lineageTag: 6742ecf8-8362-55dc-81e3-0ca327779e7d
 		summarizeBy: none
 		sourceColumn: area_name
 
@@ -11,7 +10,7 @@ table DimSuburb
 
 	column suburb
 		dataType: string
-		lineageTag: e835c011-13e8-512a-9b2c-9fcc498606eb
+		lineageTag: 07ed0e4a-c6a3-529b-b82c-bc65ecbdb976
 		summarizeBy: none
 		sourceColumn: suburb
 
@@ -19,7 +18,7 @@ table DimSuburb
 
 	column area_postcode
 		dataType: string
-		lineageTag: b8000c6c-6539-5745-92a6-555e6b4a6ae4
+		lineageTag: 5dad7e50-bc79-5ed3-b69e-0983c630abfa
 		summarizeBy: none
 		sourceColumn: area_postcode
 
@@ -27,8 +26,8 @@ table DimSuburb
 
 	column location_label
 		dataType: string
-		lineageTag: 5849e97d-d4e9-5476-8064-9599feb55079
 		dataCategory: Place
+		lineageTag: 2d4e6a6e-2c2a-5e42-adea-a7f72781e853
 		summarizeBy: none
 		sourceColumn: location_label
 
@@ -36,7 +35,7 @@ table DimSuburb
 
 	column is_tracked
 		dataType: boolean
-		lineageTag: ab534364-e6b0-5928-b2f3-316baa35aa12
+		lineageTag: 7f44ce65-194a-58a3-a201-079031439baf
 		summarizeBy: none
 		sourceColumn: is_tracked
 
@@ -52,4 +51,3 @@ table DimSuburb
 				    Unique
 
 	annotation PBI_ResultType = Table
-

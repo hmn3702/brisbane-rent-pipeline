@@ -23,3 +23,14 @@ models:
         data_tests: [not_null]
       - name: quarter_end
         data_tests: [not_null]
+
+  - name: int_rta__seasonal_deviation
+    description: >
+      Detrended seasonal deviation of RTA median rent and new bonds, per suburb or QLD x dwelling x quarter.
+      Trend is a centred 2x4 moving average; rows need five contiguous quarters. Rent deviation is left
+      null when the quarter had fewer than 10 new bonds.
+    columns:
+      - name: area_name
+        data_tests: [not_null]
+      - name: quarter_end
+        data_tests: [not_null]

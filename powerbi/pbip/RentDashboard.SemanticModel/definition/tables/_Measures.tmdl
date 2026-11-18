@@ -1,17 +1,18 @@
 table _Measures
-	lineageTag: e822b999-5a7e-5665-8198-44eca5288196
-
+	lineageTag: 69f4e09b-09a8-5387-934c-9db7f94b9687
 	/// Selected maximum RTA lag (quarters); 0 = like-for-like.
-	measure 'Max RTA Lag Value' = SELECTEDVALUE ( 'Max RTA Lag'[Max RTA Lag], 0 )
+	measure 'Max RTA Lag Value' =
+			SELECTEDVALUE ( 'Max RTA Lag'[Max RTA Lag], 0 )
 		formatString: #,0
 		displayFolder: Parameters
-		lineageTag: 03bf5afa-b05f-54d2-84ca-dc95aedc1851
+		lineageTag: 97bf4118-5448-5253-9fcc-5fdfbd18d5ff
 
 	/// Latest quarter in the RTA data.
-	measure 'Latest RTA Quarter' = CALCULATE ( MAX ( RtaLatest[quarter_end] ), REMOVEFILTERS () )
+	measure 'Latest RTA Quarter' =
+			CALCULATE ( MAX ( RtaLatest[quarter_end] ), REMOVEFILTERS () )
 		formatString: yyyy-mm-dd
 		displayFolder: Parameters
-		lineageTag: d385b85b-f820-5a49-8769-0d759b06747e
+		lineageTag: e50fdf3c-db78-5bc6-b94f-1bffa9c3e7af
 
 	/// Median weekly rent of new tenancies (RTA). Weighted average of medians by new bonds when several rows are in context.
 	measure 'Signed Rent' =
@@ -27,7 +28,7 @@ table _Measures
 			    )
 		formatString: \$#,0
 		displayFolder: RTA
-		lineageTag: 6742ecf8-8362-55dc-81e3-0ca327779e7d
+		lineageTag: 6e4a7b91-3f80-5424-9fe1-cd041b020370
 
 	/// Signed rent for the same quarter one year earlier.
 	measure 'Signed Rent LY' =
@@ -36,13 +37,14 @@ table _Measures
 			    CALCULATE ( [Signed Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = EOMONTH ( _q, -12 ) )
 		formatString: \$#,0
 		displayFolder: RTA
-		lineageTag: 07ed0e4a-c6a3-529b-b82c-bc65ecbdb976
+		lineageTag: 161aaab6-af28-537c-a94e-8c226ce46d5c
 
 	/// Year-on-year change in signed rent (RTA advises YoY, not QoQ).
-	measure 'Signed Rent YoY %' = DIVIDE ( [Signed Rent] - [Signed Rent LY], [Signed Rent LY] )
+	measure 'Signed Rent YoY %' =
+			DIVIDE ( [Signed Rent] - [Signed Rent LY], [Signed Rent LY] )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: RTA
-		lineageTag: 5dad7e50-bc79-5ed3-b69e-0983c630abfa
+		lineageTag: efefa008-f237-5f72-bc5b-cdb3f2732447
 
 	/// Queensland-wide median for the quarter and dwelling in context.
 	measure 'QLD Median Rent' =
@@ -56,7 +58,7 @@ table _Measures
 			    )
 		formatString: \$#,0
 		displayFolder: RTA
-		lineageTag: 2d4e6a6e-2c2a-5e42-adea-a7f72781e853
+		lineageTag: 4ebe0a8a-a9c2-59cd-84b8-30e6c026c826
 
 	/// Queensland median one year earlier.
 	measure 'QLD Median Rent LY' =
@@ -65,13 +67,14 @@ table _Measures
 			    CALCULATE ( [QLD Median Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = EOMONTH ( _q, -12 ) )
 		formatString: \$#,0
 		displayFolder: RTA
-		lineageTag: 7f44ce65-194a-58a3-a201-079031439baf
+		lineageTag: 41b38cb8-04ab-5803-b33d-00255c973bff
 
 	/// Signed rent relative to the Queensland median.
-	measure 'Premium vs QLD %' = DIVIDE ( [Signed Rent], [QLD Median Rent] ) - 1
+	measure 'Premium vs QLD %' =
+			DIVIDE ( [Signed Rent], [QLD Median Rent] ) - 1
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: RTA
-		lineageTag: f030f536-4829-5c69-b20c-67831909b5ef
+		lineageTag: 0d69de0e-e367-51ab-86ea-00db69c6038d
 
 	/// New tenancies signed (no double count of 'All dwellings').
 	measure 'New Bonds' =
@@ -81,7 +84,7 @@ table _Measures
 			RETURN SUMX ( _r, RtaTrend[new_bonds] )
 		formatString: #,0
 		displayFolder: RTA
-		lineageTag: dbb396e0-965e-5056-900e-5a9e70cd7bc9
+		lineageTag: 705ba8d1-1bc9-5b83-bd33-a602868ba846
 
 	/// Signed rent in the latest RTA quarter.
 	measure 'Signed Rent (latest)' =
@@ -90,7 +93,7 @@ table _Measures
 			    CALCULATE ( [Signed Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
 		formatString: \$#,0
 		displayFolder: RTA latest
-		lineageTag: 2bfc8a8e-deb7-5aa9-89d2-16bff57f7524
+		lineageTag: 68bc816d-5653-5da5-aa9a-6e949ef632c8
 
 	/// YoY change in the latest RTA quarter.
 	measure 'Signed Rent YoY % (latest)' =
@@ -99,7 +102,7 @@ table _Measures
 			    CALCULATE ( [Signed Rent YoY %], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: RTA latest
-		lineageTag: 85c7806f-308c-5142-8e33-f54624faf5d7
+		lineageTag: ad486346-836c-5daf-853a-c2f62acd768c
 
 	/// Premium over Queensland in the latest quarter.
 	measure 'Premium vs QLD % (latest)' =
@@ -108,7 +111,7 @@ table _Measures
 			    CALCULATE ( [Premium vs QLD %], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: RTA latest
-		lineageTag: 1e69c2c6-06ce-5c58-8b8a-a7fb73acf0bb
+		lineageTag: a57bead2-43ef-5316-902f-856ed574bcb2
 
 	/// Queensland median in the latest quarter.
 	measure 'QLD Median Rent (latest)' =
@@ -117,7 +120,7 @@ table _Measures
 			    CALCULATE ( [QLD Median Rent], REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
 		formatString: \$#,0
 		displayFolder: RTA latest
-		lineageTag: 1b6cec96-60df-5b92-9910-695eaf5688ba
+		lineageTag: 8d01b6a9-a45e-5bd1-bb23-8994311a243f
 
 	/// Queensland median YoY in the latest quarter.
 	measure 'QLD Median YoY % (latest)' =
@@ -126,7 +129,7 @@ table _Measures
 			    CALCULATE ( DIVIDE ( [QLD Median Rent], [QLD Median Rent LY] ) - 1, REMOVEFILTERS ( DimQuarter ), DimQuarter[quarter_end] = _q )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: RTA latest
-		lineageTag: c29bc2b6-256e-55b8-b485-6ab5785ba7ec
+		lineageTag: b113579f-76fa-554b-9daf-3800cb4126cd
 
 	/// Latest signed median (suburbs with >= 30 new bonds).
 	measure 'Latest Rent' =
@@ -142,7 +145,7 @@ table _Measures
 			    )
 		formatString: \$#,0
 		displayFolder: League table
-		lineageTag: 17c02fb6-a82a-56dc-a06c-178aa908d58c
+		lineageTag: e822b999-5a7e-5665-8198-44eca5288196
 
 	/// 1-year change, suburbs with >= 30 new bonds.
 	measure 'Latest YoY %' =
@@ -158,7 +161,7 @@ table _Measures
 			    )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: League table
-		lineageTag: 683062ad-7758-5f84-bcb1-b001e969d6f3
+		lineageTag: 1b08c682-cb88-5fce-9727-1e953db064f6
 
 	/// 5-year change, suburbs with >= 30 new bonds.
 	measure 'Latest 5y %' =
@@ -174,7 +177,7 @@ table _Measures
 			    )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: League table
-		lineageTag: 139185c0-3d37-5f0e-9387-c83813fbc689
+		lineageTag: 09e747a2-706c-5963-972f-eaf1c4b76855
 
 	/// New bonds in the latest quarter.
 	measure 'Latest New Bonds' =
@@ -184,7 +187,7 @@ table _Measures
 			RETURN SUMX ( _r, RtaLatest[new_bonds] )
 		formatString: #,0
 		displayFolder: League table
-		lineageTag: b9c68daf-4e20-5f3a-bc59-687270a72994
+		lineageTag: 24a1fd89-11b0-5b97-a5d4-b05ca73cf263
 
 	/// Rank among QLD suburbs by median rent (1 = most expensive).
 	measure 'QLD Rank' =
@@ -194,7 +197,7 @@ table _Measures
 			RETURN IF ( COUNTROWS ( _r ) = 1, MAXX ( _r, RtaLatest[rent_rank_qld] ) )
 		formatString: #,0
 		displayFolder: League table
-		lineageTag: 1c45dd48-fbf7-5740-8e84-c72df15126e7
+		lineageTag: fc78702a-f227-52a2-aa18-aee47ee52b79
 
 	/// Suburbs with a reliable latest median (>= 30 new bonds).
 	measure 'Suburbs Ranked' =
@@ -204,7 +207,7 @@ table _Measures
 			RETURN COUNTROWS ( _r )
 		formatString: #,0
 		displayFolder: League table
-		lineageTag: 97bf4118-5448-5253-9fcc-5fdfbd18d5ff
+		lineageTag: 28fca423-c61a-5f16-a547-8ac9cf994d1a
 
 	/// Median asking rent of new Domain listings; weighted by listings when several rows.
 	measure 'Asking Rent' =
@@ -220,7 +223,7 @@ table _Measures
 			    )
 		formatString: \$#,0
 		displayFolder: Gap
-		lineageTag: e50fdf3c-db78-5bc6-b94f-1bffa9c3e7af
+		lineageTag: 536fd4dc-3498-59cf-ad26-bcbfb6234ed5
 
 	/// RTA signed rent of the quarter the asking rents are compared with (as-of join); weighted by bonds.
 	measure 'Signed Rent (compared)' =
@@ -236,7 +239,7 @@ table _Measures
 			    )
 		formatString: \$#,0
 		displayFolder: Gap
-		lineageTag: 6e4a7b91-3f80-5424-9fe1-cd041b020370
+		lineageTag: 0f75e417-bfa4-5c00-883b-78ca9827ce55
 
 	/// Asking vs signed rent. With 'All dwellings' (or no dwelling filter) it is mix-adjusted: per-dwelling gaps weighted by RTA new bonds. For one suburb this equals gap_pct_mix_adjusted in the dbt mart.
 	measure 'Gap %' =
@@ -251,7 +254,7 @@ table _Measures
 			    )
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: Gap
-		lineageTag: 161aaab6-af28-537c-a94e-8c226ce46d5c
+		lineageTag: 62f8a95f-7c02-561c-97b6-f7b61f9408af
 
 	/// New Domain listings in the period.
 	measure 'New Listings' =
@@ -261,20 +264,21 @@ table _Measures
 			RETURN SUMX ( _r, Gap[n_new_listings] )
 		formatString: #,0
 		displayFolder: Gap
-		lineageTag: efefa008-f237-5f72-bc5b-cdb3f2732447
+		lineageTag: 45ad2c35-fff7-586d-aef4-58af40503763
 
 	/// Cells resting on < 5 listings or < 10 RTA bonds.
-	measure 'Low Sample Rows' = COUNTROWS ( FILTER ( Gap, Gap[is_low_sample] && Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) ) + 0
+	measure 'Low Sample Rows' =
+			COUNTROWS ( FILTER ( Gap, Gap[is_low_sample] && Gap[rta_quarters_behind] <= [Max RTA Lag Value] ) ) + 0
 		formatString: #,0
 		displayFolder: Gap
-		lineageTag: 4ebe0a8a-a9c2-59cd-84b8-30e6c026c826
+		lineageTag: f07f1109-b7cd-54b3-b207-28c764611b14
 
 	/// Which RTA quarter the asking rents are compared with.
 	measure 'RTA Quarter Compared' =
 			VAR _q = MAXX ( FILTER ( Gap, Gap[rta_quarters_behind] <= [Max RTA Lag Value] ), Gap[rta_quarter_end] )
 			RETURN IF ( ISBLANK ( _q ), "–", "vs RTA " & FORMAT ( _q, "mmm" ) & " Qtr " & YEAR ( _q ) )
 		displayFolder: Gap
-		lineageTag: 41b38cb8-04ab-5803-b33d-00255c973bff
+		lineageTag: 53914c63-04a9-55f4-a172-e500da0268cf
 
 	/// Listings that left the market (leased or withdrawn).
 	measure 'Listings Closed' =
@@ -284,7 +288,7 @@ table _Measures
 			RETURN SUMX ( _r, Velocity[n_listings_closed] )
 		formatString: #,0
 		displayFolder: Velocity
-		lineageTag: 0d69de0e-e367-51ab-86ea-00db69c6038d
+		lineageTag: 9b106c8a-6a7c-59c0-baf6-5408b9cc60a8
 
 	/// Median days on market; weighted average of medians when several rows.
 	measure 'Days on Market' =
@@ -300,7 +304,7 @@ table _Measures
 			    )
 		formatString: 0.0
 		displayFolder: Velocity
-		lineageTag: 705ba8d1-1bc9-5b83-bd33-a602868ba846
+		lineageTag: 5745a357-5ec7-57ff-b1a7-fe40d76d00ce
 
 	/// Share of closed listings that cut the asking price first.
 	measure 'Price Cut %' =
@@ -310,27 +314,105 @@ table _Measures
 			RETURN DIVIDE ( SUMX ( _r, Velocity[pct_with_price_cut] * Velocity[n_listings_closed] ), SUMX ( _r, Velocity[n_listings_closed] ) ) / 100
 		formatString: 0.0%;-0.0%;0.0%
 		displayFolder: Velocity
-		lineageTag: 68bc816d-5653-5da5-aa9a-6e949ef632c8
+		lineageTag: 3afbb40e-321b-57de-813b-cd01c3d1113f
+
+	/// Queensland: average % the signed rent sits above/below trend in this quarter of the year.
+	measure 'QLD Rent vs Trend' =
+			CALCULATE ( AVERAGE ( Seasonality[rent_dev_pct] ), Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: b4d3831b-3463-595b-9915-6faec17a3b8a
+
+	/// Selected suburb: average % the signed rent sits above/below trend.
+	measure 'Suburb Rent vs Trend' =
+			CALCULATE ( AVERAGE ( Seasonality[rent_dev_pct] ), Seasonality[geo_level] = "suburb" ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: 67324da0-c217-5082-a91a-d54a0e0a208e
+
+	/// Queensland: new bonds (leases signed) vs trend in this quarter.
+	measure 'QLD Leases vs Trend' =
+			CALCULATE ( AVERAGE ( Seasonality[bonds_dev_pct] ), Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: 5da522c4-33a5-5faf-92aa-c59fb08a686b
+
+	/// Selected suburb: new bonds vs trend in this quarter.
+	measure 'Suburb Leases vs Trend' =
+			CALCULATE ( AVERAGE ( Seasonality[bonds_dev_pct] ), Seasonality[geo_level] = "suburb" ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: f47a949d-ddba-52e2-b65a-3e4e6e7b4649
+
+	/// March-quarter new bonds vs trend, all dwellings; suburbs averaging >= 40 bonds a quarter with >= 6 years of data.
+	measure 'March Lease Surge' =
+			VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "suburb", Seasonality[quarter_of_year] = 1,
+			                          DimDwelling[dwelling] = "All dwellings" )
+			VAR _ok = FILTER ( _r, Seasonality[avg_new_bonds] >= 40 && Seasonality[n_years_bonds] >= 6 )
+			RETURN IF ( COUNTROWS ( _ok ) = 1, MAXX ( _ok, Seasonality[bonds_dev_pct] ) / 100 )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: f8217949-0933-500e-9a89-efd16ae51391
+
+	/// Quarter of the year with the lowest rent vs trend in Queensland.
+	measure 'Cheapest Quarter (QLD)' =
+			VAR _q = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", Seasonality[cheapest_rank] = 1, REMOVEFILTERS ( DimSuburb ) )
+			RETURN IF ( COUNTROWS ( _q ) = 1, MAXX ( _q, Seasonality[quarter_label] ), "–" )
+		displayFolder: Seasonality
+		lineageTag: 1626b977-c603-5cca-b595-eabf0b49b977
+
+	/// Gap between the dearest and cheapest quarter in Queensland (percentage points).
+	measure 'Peak to Cheapest (QLD)' =
+			VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) )
+			RETURN ( MAXX ( _r, Seasonality[rent_dev_pct] ) - MINX ( _r, Seasonality[rent_dev_pct] ) ) / 100
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Seasonality
+		lineageTag: b224cb51-0d66-5180-9618-4507b0102964
+
+	/// What the peak-to-cheapest gap is worth over a year at the latest Queensland median for this dwelling.
+	measure 'Yearly Saving (QLD)' =
+			[Peak to Cheapest (QLD)] * [QLD Median Rent (latest)] * 52
+		formatString: \$#,0
+		displayFolder: Seasonality
+		lineageTag: fbee4b6b-9d08-59e7-92ed-09c82f81e1c4
+
+	/// March-quarter premium before 2020 vs since 2020, Queensland.
+	measure 'March Premium Change (QLD)' =
+			VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", Seasonality[quarter_of_year] = 1, REMOVEFILTERS ( DimSuburb ) )
+			VAR _pre = MAXX ( _r, Seasonality[rent_dev_pct_before_2020] )
+			VAR _post = MAXX ( _r, Seasonality[rent_dev_pct_2020_on] )
+			RETURN IF ( NOT ISBLANK ( _pre ), "Queensland March rent premium (" & SELECTEDVALUE ( DimDwelling[dwelling] ) & "): " & FORMAT ( _pre / 100, "+0.0%;-0.0%" ) & " before 2020  →  " & FORMAT ( _post / 100, "+0.0%;-0.0%" ) & " since 2020" )
+		displayFolder: Seasonality
+		lineageTag: 9e2edca3-7b2b-5c25-a381-57bab048f549
 
 	/// Warns when Domain listings are synthetic.
-	measure 'Data Banner' = IF ( COUNTROWS ( Gap ) = 0, "RTA data only · Domain listings pending API access", IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" ) )
+	measure 'Data Banner' =
+			IF ( COUNTROWS ( Gap ) = 0, "RTA data only · Domain listings pending API access", IF ( SELECTEDVALUE ( Manifest[domain_data_is_synthetic], FALSE () ), "DEMO DATA · Domain listings are synthetic · RTA figures are real", "Live Domain snapshots + RTA bond data" ) )
 		displayFolder: Labels
-		lineageTag: ad486346-836c-5daf-853a-c2f62acd768c
+		lineageTag: a5b78de4-401f-5dce-a825-be3f838d2772
 
 	/// Data currency label.
-	measure 'Data As Of' = "RTA data to " & FORMAT ( SELECTEDVALUE ( Manifest[rta_latest_quarter] ), "mmm yyyy" ) & "  ·  exported " & LEFT ( SELECTEDVALUE ( Manifest[exported_at] ), 10 )
+	measure 'Data As Of' =
+			"RTA data to " & FORMAT ( SELECTEDVALUE ( Manifest[rta_latest_quarter] ), "mmm yyyy" ) & "  ·  exported " & LEFT ( SELECTEDVALUE ( Manifest[exported_at] ), 10 )
 		displayFolder: Labels
-		lineageTag: a57bead2-43ef-5316-902f-856ed574bcb2
+		lineageTag: bfe751e4-d598-5d97-82b5-a416f8a048ab
 
 	/// Attribution.
-	measure 'Source Credit' = "Source: Residential Tenancies Authority (Qld), CC BY 4.0 · Domain listings"
+	measure 'Source Credit' =
+			"Source: Residential Tenancies Authority (Qld), CC BY 4.0 · Domain listings"
 		displayFolder: Labels
-		lineageTag: 8d01b6a9-a45e-5bd1-bb23-8994311a243f
+		lineageTag: 9f7eacd2-3641-5b38-8c1b-4a481f676a25
+
+	/// Attribution for RTA-only pages.
+	measure 'Source Credit (RTA)' =
+			"Source: Residential Tenancies Authority (Qld), CC BY 4.0"
+		displayFolder: Labels
+		lineageTag: c0064267-1936-529d-91ed-47537521dfcc
 
 	column Placeholder
 		dataType: int64
 		isHidden
-		lineageTag: b113579f-76fa-554b-9daf-3800cb4126cd
+		lineageTag: 6cc2ccd9-bbf0-514a-aef8-b3dcad64bfdf
 		summarizeBy: none
 		isNameInferred
 		sourceColumn: [Placeholder]
@@ -339,5 +421,6 @@ table _Measures
 
 	partition _Measures = calculated
 		mode: import
-		source = ROW ( "Placeholder", 0 )
+		source =
+				ROW ( "Placeholder", 0 )
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "m_gap",
   "position": {
     "x": 16,
@@ -13,26 +13,6 @@
     "visualType": "pivotTable",
     "query": {
       "queryState": {
-        "Columns": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "DimDwelling"
-                    }
-                  },
-                  "Property": "dwelling"
-                }
-              },
-              "queryRef": "DimDwelling.dwelling",
-              "nativeQueryRef": "dwelling",
-              "active": true,
-              "displayName": "Dwelling"
-            }
-          ]
-        },
         "Rows": {
           "projections": [
             {
@@ -48,8 +28,26 @@
               },
               "queryRef": "DimSuburb.suburb",
               "nativeQueryRef": "suburb",
-              "active": true,
               "displayName": "Suburb"
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DimDwelling"
+                    }
+                  },
+                  "Property": "dwelling"
+                }
+              },
+              "queryRef": "DimDwelling.dwelling",
+              "nativeQueryRef": "dwelling",
+              "displayName": "Dwelling"
             }
           ]
         },

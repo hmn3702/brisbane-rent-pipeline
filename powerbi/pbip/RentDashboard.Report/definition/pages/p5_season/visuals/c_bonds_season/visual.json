@@ -1,0 +1,131 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "c_bonds_season",
+  "position": {
+    "x": 16,
+    "y": 428,
+    "z": 11000,
+    "height": 222,
+    "width": 620,
+    "tabOrder": 11000
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Seasonality"
+                    }
+                  },
+                  "Property": "quarter_label"
+                }
+              },
+              "queryRef": "Seasonality.quarter_label",
+              "nativeQueryRef": "quarter_label"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "QLD Leases vs Trend"
+                }
+              },
+              "queryRef": "_Measures.QLD Leases vs Trend",
+              "nativeQueryRef": "QLD Leases vs Trend"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Suburb Leases vs Trend"
+                }
+              },
+              "queryRef": "_Measures.Suburb Leases vs Trend",
+              "nativeQueryRef": "Suburb Leases vs Trend"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "dataPoint": [
+        {
+          "selector": {
+            "metadata": "_Measures.QLD Leases vs Trend"
+          },
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#9CA3AF'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "selector": {
+            "metadata": "_Measures.Suburb Leases vs Trend"
+          },
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1F6FB2'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'New leases vs trend by quarter: the student intake'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

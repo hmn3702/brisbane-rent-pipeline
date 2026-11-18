@@ -1,10 +1,9 @@
 table DimQuarter
-	lineageTag: 64478842-3486-5662-9e2a-2c041acc081a
-
+	lineageTag: 139185c0-3d37-5f0e-9387-c83813fbc689
 	column quarter_end
 		dataType: dateTime
 		formatString: yyyy-mm-dd
-		lineageTag: 431e0ff4-4625-5d0b-a685-2d5414305f3e
+		lineageTag: 1b6cec96-60df-5b92-9910-695eaf5688ba
 		summarizeBy: none
 		sourceColumn: quarter_end
 
@@ -14,7 +13,7 @@ table DimQuarter
 
 	column year
 		dataType: int64
-		lineageTag: 25943ae4-2ce7-568c-af24-fb89714415d2
+		lineageTag: c29bc2b6-256e-55b8-b485-6ab5785ba7ec
 		summarizeBy: none
 		sourceColumn: year
 
@@ -22,17 +21,17 @@ table DimQuarter
 
 	column quarter_label
 		dataType: string
-		lineageTag: 6c8e1f68-dc5c-526e-8a3b-70ba743b196d
+		sortByColumn: quarter_index
+		lineageTag: 17c02fb6-a82a-56dc-a06c-178aa908d58c
 		summarizeBy: none
 		sourceColumn: quarter_label
-		sortByColumn: quarter_index
 
 		annotation SummarizationSetBy = User
 
 	column quarter_index
 		dataType: int64
 		isHidden
-		lineageTag: 869a48f0-897e-5829-aacc-2f928e852069
+		lineageTag: 683062ad-7758-5f84-bcb1-b001e969d6f3
 		summarizeBy: none
 		sourceColumn: quarter_index
 
@@ -51,4 +50,3 @@ table DimQuarter
 				    Index
 
 	annotation PBI_ResultType = Table
-

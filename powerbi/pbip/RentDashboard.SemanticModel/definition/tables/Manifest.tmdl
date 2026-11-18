@@ -1,10 +1,9 @@
 table Manifest
 	isHidden
-	lineageTag: d41e1401-cff9-5268-a6fa-6fc23759a526
-
+	lineageTag: d385b85b-f820-5a49-8769-0d759b06747e
 	column exported_at
 		dataType: string
-		lineageTag: 45560b9d-b618-5556-a8f8-d5942b10543c
+		lineageTag: 64478842-3486-5662-9e2a-2c041acc081a
 		summarizeBy: none
 		sourceColumn: exported_at
 
@@ -12,7 +11,7 @@ table Manifest
 
 	column domain_data_is_synthetic
 		dataType: boolean
-		lineageTag: a79b6b5c-1534-5460-b20e-76073ac27c7a
+		lineageTag: 032efa22-3acc-52b0-b7a8-b0d6a440b389
 		summarizeBy: none
 		sourceColumn: domain_data_is_synthetic
 
@@ -20,7 +19,7 @@ table Manifest
 
 	column domain_synthetic_share
 		dataType: double
-		lineageTag: 44d46ca7-1a3c-525f-a44b-fa668e7e8ea5
+		lineageTag: dacb90d7-e648-5f92-a8db-c005493963cb
 		summarizeBy: none
 		sourceColumn: domain_synthetic_share
 
@@ -29,7 +28,7 @@ table Manifest
 	column rta_latest_quarter
 		dataType: dateTime
 		formatString: yyyy-mm-dd
-		lineageTag: 18aab7b9-59c1-5be2-91b0-ee7c3a79f65f
+		lineageTag: 03bf5afa-b05f-54d2-84ca-dc95aedc1851
 		summarizeBy: none
 		sourceColumn: rta_latest_quarter
 
@@ -49,4 +48,3 @@ table Manifest
 				    Row
 
 	annotation PBI_ResultType = Table
-

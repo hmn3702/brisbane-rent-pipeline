@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "b_gap",
   "position": {
     "x": 672,
@@ -27,8 +27,7 @@
                 }
               },
               "queryRef": "DimSuburb.suburb",
-              "nativeQueryRef": "suburb",
-              "active": true
+              "nativeQueryRef": "suburb"
             }
           ]
         },
@@ -66,7 +65,8 @@
             },
             "direction": "Descending"
           }
-        ]
+        ],
+        "isDefaultSort": false
       }
     },
     "objects": {

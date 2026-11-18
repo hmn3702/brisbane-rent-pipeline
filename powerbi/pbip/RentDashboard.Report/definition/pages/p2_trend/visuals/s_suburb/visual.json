@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "s_suburb",
   "position": {
     "x": 16,
@@ -27,8 +27,7 @@
                 }
               },
               "queryRef": "DimSuburb.suburb",
-              "nativeQueryRef": "suburb",
-              "active": true
+              "nativeQueryRef": "suburb"
             }
           ]
         }

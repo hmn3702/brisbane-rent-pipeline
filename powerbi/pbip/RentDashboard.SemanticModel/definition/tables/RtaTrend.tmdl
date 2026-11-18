@@ -1,6 +1,5 @@
 table RtaTrend
 	lineageTag: 34496317-232d-5c1d-ad6e-13d471f64275
-
 	column area_name
 		dataType: string
 		isHidden
@@ -61,8 +60,8 @@ table RtaTrend
 
 	column quarter_end
 		dataType: dateTime
-		isHidden
 		formatString: yyyy-mm-dd
+		isHidden
 		lineageTag: 98eeb5d4-8da0-5ade-af72-a63a24905eaa
 		summarizeBy: none
 		sourceColumn: quarter_end
@@ -153,4 +152,3 @@ table RtaTrend
 				    Typed
 
 	annotation PBI_ResultType = Table
-

@@ -104,6 +104,26 @@ CSV_TABLES = {
         ("premium_vs_qld_pct", "double", "type number", False, {}),
         ("is_tracked", "boolean", "type logical", False, {}),
     ]),
+    "Seasonality": ("mart_rta_seasonality.csv", [
+        ("geo_level", "string", "type text", True, {}),
+        ("area_name", "string", "type text", True, {}),
+        ("area_label", "string", "type text", False, {}),
+        ("dwelling", "string", "type text", True, {}),
+        ("quarter_of_year", "int64", "Int64.Type", True, {}),
+        ("quarter_label", "string", "type text", False, {"sortByColumn": "quarter_of_year"}),
+        ("n_years_rent", "int64", "Int64.Type", False, {}),
+        ("n_years_bonds", "int64", "Int64.Type", False, {}),
+        ("rent_dev_pct", "double", "type number", False, {}),
+        ("rent_t_stat", "double", "type number", False, {}),
+        ("is_rent_significant", "boolean", "type logical", False, {}),
+        ("pct_years_above_trend", "double", "type number", False, {}),
+        ("rent_dev_pct_before_2020", "double", "type number", False, {}),
+        ("rent_dev_pct_2020_on", "double", "type number", False, {}),
+        ("bonds_dev_pct", "double", "type number", False, {}),
+        ("avg_new_bonds", "double", "type number", False, {}),
+        ("cheapest_rank", "int64", "Int64.Type", False, {}),
+        ("is_tracked", "boolean", "type logical", False, {}),
+    ]),
     "Velocity": ("mart_listing_velocity_suburb_month.csv", [
         ("suburb", "string", "type text", False, {}),
         ("rta_suburb", "string", "type text", True, {}),
@@ -130,7 +150,7 @@ in
         ("is_tracked", "boolean", False, {}),
     ]),
     "DimDwelling": ("""let
-    All    = List.Distinct(RtaTrend[dwelling] & Gap[dwelling] & Velocity[dwelling]),
+    All    = List.Distinct(RtaTrend[dwelling] & Gap[dwelling] & Velocity[dwelling] & Seasonality[dwelling]),
     Base   = Table.FromList(All, Splitter.SplitByNothing(), type table [dwelling = text]),
     Order  = {"All dwellings", "Flat 1", "Flat 2", "Flat 3", "House 2", "House 3", "House 4", "Townhouse 2", "Townhouse 3", "Other"},
     Sorted = Table.AddColumn(Base, "dwelling_sort", each let i = List.PositionOf(Order, [dwelling]) in if i < 0 then 99 else i, Int64.Type),
@@ -168,6 +188,8 @@ RELATIONSHIPS = [  # (many side, one side)
     ("RtaTrend", "quarter_end", "DimQuarter", "quarter_end"),
     ("Gap", "quarter_end", "DimQuarter", "quarter_end"),
     ("Velocity", "quarter_end", "DimQuarter", "quarter_end"),
+    ("Seasonality", "area_name", "DimSuburb", "area_name"),
+    ("Seasonality", "dwelling", "DimDwelling", "dwelling"),
 ]
 
 RENT, PCT, INT, DAYS = r"\$#,0", "0.0%;-0.0%;0.0%", "#,0", "0.0"
@@ -292,6 +314,36 @@ MEASURES = [
     ("Price Cut %", "Velocity", PCT, "Share of closed listings that cut the asking price first.",
      rows("Velocity") + "RETURN DIVIDE ( SUMX ( _r, Velocity[pct_with_price_cut] * Velocity[n_listings_closed] ), SUMX ( _r, Velocity[n_listings_closed] ) ) / 100"),
 
+    # ---- Seasonality (real RTA data; one dwelling selected on the page)
+    ("QLD Rent vs Trend", "Seasonality", PCT, "Queensland: average % the signed rent sits above/below trend in this quarter of the year.",
+     'CALCULATE ( AVERAGE ( Seasonality[rent_dev_pct] ), Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) ) / 100'),
+    ("Suburb Rent vs Trend", "Seasonality", PCT, "Selected suburb: average % the signed rent sits above/below trend.",
+     'CALCULATE ( AVERAGE ( Seasonality[rent_dev_pct] ), Seasonality[geo_level] = "suburb" ) / 100'),
+    ("QLD Leases vs Trend", "Seasonality", PCT, "Queensland: new bonds (leases signed) vs trend in this quarter.",
+     'CALCULATE ( AVERAGE ( Seasonality[bonds_dev_pct] ), Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) ) / 100'),
+    ("Suburb Leases vs Trend", "Seasonality", PCT, "Selected suburb: new bonds vs trend in this quarter.",
+     'CALCULATE ( AVERAGE ( Seasonality[bonds_dev_pct] ), Seasonality[geo_level] = "suburb" ) / 100'),
+    ("March Lease Surge", "Seasonality", PCT,
+     "March-quarter new bonds vs trend, all dwellings; suburbs averaging >= 40 bonds a quarter with >= 6 years of data.",
+     """VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "suburb", Seasonality[quarter_of_year] = 1,
+                          DimDwelling[dwelling] = "All dwellings" )
+VAR _ok = FILTER ( _r, Seasonality[avg_new_bonds] >= 40 && Seasonality[n_years_bonds] >= 6 )
+RETURN IF ( COUNTROWS ( _ok ) = 1, MAXX ( _ok, Seasonality[bonds_dev_pct] ) / 100 )"""),
+    ("Cheapest Quarter (QLD)", "Seasonality", None, "Quarter of the year with the lowest rent vs trend in Queensland.",
+     """VAR _q = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", Seasonality[cheapest_rank] = 1, REMOVEFILTERS ( DimSuburb ) )
+RETURN IF ( COUNTROWS ( _q ) = 1, MAXX ( _q, Seasonality[quarter_label] ), "–" )"""),
+    ("Peak to Cheapest (QLD)", "Seasonality", PCT, "Gap between the dearest and cheapest quarter in Queensland (percentage points).",
+     """VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", REMOVEFILTERS ( DimSuburb ) )
+RETURN ( MAXX ( _r, Seasonality[rent_dev_pct] ) - MINX ( _r, Seasonality[rent_dev_pct] ) ) / 100"""),
+    ("Yearly Saving (QLD)", "Seasonality", RENT,
+     "What the peak-to-cheapest gap is worth over a year at the latest Queensland median for this dwelling.",
+     "[Peak to Cheapest (QLD)] * [QLD Median Rent (latest)] * 52"),
+    ("March Premium Change (QLD)", "Seasonality", None, "March-quarter premium before 2020 vs since 2020, Queensland.",
+     """VAR _r = CALCULATETABLE ( Seasonality, Seasonality[geo_level] = "state", Seasonality[quarter_of_year] = 1, REMOVEFILTERS ( DimSuburb ) )
+VAR _pre = MAXX ( _r, Seasonality[rent_dev_pct_before_2020] )
+VAR _post = MAXX ( _r, Seasonality[rent_dev_pct_2020_on] )
+RETURN IF ( NOT ISBLANK ( _pre ), "Queensland March rent premium (" & SELECTEDVALUE ( DimDwelling[dwelling] ) & "): " & FORMAT ( _pre / 100, "+0.0%;-0.0%" ) & " before 2020  →  " & FORMAT ( _post / 100, "+0.0%;-0.0%" ) & " since 2020" )"""),
+
     # ---- Labels
     ("Data Banner", "Labels", None, "Warns when Domain listings are synthetic.",
      'IF ( COUNTROWS ( Gap ) = 0, "RTA data only · Domain listings pending API access", '
@@ -300,6 +352,8 @@ MEASURES = [
      '"RTA data to " & FORMAT ( SELECTEDVALUE ( Manifest[rta_latest_quarter] ), "mmm yyyy" ) & "  ·  exported " & LEFT ( SELECTEDVALUE ( Manifest[exported_at] ), 10 )'),
     ("Source Credit", "Labels", None, "Attribution.",
      '"Source: Residential Tenancies Authority (Qld), CC BY 4.0 · Domain listings"'),
+    ("Source Credit (RTA)", "Labels", None, "Attribution for RTA-only pages.",
+     '"Source: Residential Tenancies Authority (Qld), CC BY 4.0"'),
 ]
 
 
@@ -416,7 +470,7 @@ in
 
     rel = []
     for ft, fc, tt, tc in RELATIONSHIPS:
-        rel += [f"relationship {tag()}", f"\tfromColumn: {q(ft)}.{q(fc)}", f"\ttoColumn: {q(tt)}.{q(tc)}", ""]
+        rel += [f"relationship {uuid.uuid5(uuid.NAMESPACE_URL, f'rentdash/rel/{ft}.{fc}->{tt}.{tc}')}", f"\tfromColumn: {q(ft)}.{q(fc)}", f"\ttoColumn: {q(tt)}.{q(tc)}", ""]
     files[f"{sm}/definition/relationships.tmdl"] = "\n".join(rel)
     return files
 
@@ -521,19 +575,19 @@ def slicer(page: Page, vname, x, y, w, h, field, title, single=True, dropdown=Tr
     page.add(vname, "slicer", x, y, w, h, roles={"Values": [field]}, objects=objs, title=False)
 
 
-def chrome(page: Page, title: str, subtitle: str):
+def chrome(page: Page, title: str, subtitle: str, credit: str = "Source Credit"):
     textbox(page, "hdr_title", 16, 4, 860, 48, title, size=18)
     textbox(page, "hdr_sub", 16, 46, 860, 30, subtitle, size=10, bold=False, colour="#4B5563")
     card(page, "hdr_banner", 900, 12, 364, 44, "Data Banner", font=10, colour="#B45309")
     card(page, "ftr_asof", 16, 688, 560, 28, "Data As Of", font=9, colour="#6B7280")
-    card(page, "ftr_credit", 700, 688, 564, 28, "Source Credit", font=9, colour="#6B7280")
+    card(page, "ftr_credit", 700, 688, 564, 28, credit, font=9, colour="#6B7280")
 
 
 def series_colours(pairs) -> list:
     return [{"selector": {"metadata": f"_Measures.{m}"}, "properties": {"fill": color(c)}} for m, c in pairs]
 
 
-DEFAULTS = {"suburb": "Toowong", "quarter_label": None}
+DEFAULTS = {"suburb": "Toowong", "quarter_label": None, "season_dwelling": "Flat 2", "season_suburb": "St Lucia"}
 
 
 def compute_defaults(data_dir: Path) -> None:
@@ -564,7 +618,7 @@ def build_pages() -> list[Page]:
     # ---------------------------------------------------------------- page 1
     p1 = Page("p1_rising", "Where rents are rising")
     chrome(p1, "Where Queensland rents are rising",
-           "Latest RTA quarter · signed rents of new tenancies · suburbs with 30+ new bonds")
+           "Latest RTA quarter · signed rents of new tenancies · suburbs with 30+ new bonds", credit="Source Credit (RTA)")
     slicer(p1, "s_dwelling", 16, 76, 260, 64, D, "Dwelling")
     card(p1, "c_qld", 292, 76, 310, 80, "QLD Median Rent (latest)", "Queensland median /week")
     card(p1, "c_qld_yoy", 618, 76, 310, 80, "QLD Median YoY % (latest)", "Queensland, 1-year change")
@@ -584,7 +638,7 @@ def build_pages() -> list[Page]:
     # ---------------------------------------------------------------- page 2
     p2 = Page("p2_trend", "Trend vs Queensland")
     chrome(p2, "Suburb trend vs Queensland",
-           "Pick a suburb · compare year-on-year, not quarter-on-quarter (rents are seasonal)")
+           "Pick a suburb · compare year-on-year, not quarter-on-quarter (rents are seasonal)", credit="Source Credit (RTA)")
     slicer(p2, "s_suburb", 16, 76, 300, 64, S, "Suburb", default=DEFAULTS["suburb"])
     slicer(p2, "s_dwelling", 332, 76, 240, 64, D, "Dwelling")
     card(p2, "c_rent", 588, 76, 220, 80, "Signed Rent (latest)", "Signed rent, latest qtr")
@@ -641,7 +695,33 @@ def build_pages() -> list[Page]:
     p4.add("b_cut", "clusteredBarChart", 672, 428, 592, 250, title="Share of listings that cut the price",
            roles={"Category": [S], "Y": [measure("Price Cut %")]}, sort=(measure("Price Cut %"), "Descending"),
            objects={"dataPoint": [{"properties": {"fill": color(NEUTRAL)}}]})
-    return [p1, p2, p3, p4]
+
+    # ---------------------------------------------------------------- page 5 (real data only)
+    p5 = Page("p5_season", "When to sign a lease")
+    chrome(p5, "Is there a cheapest time to sign a lease?",
+           "Real RTA data · rents and new leases vs their trend (centred 4-quarter average) · QLD since 2012, suburbs since 2017", credit="Source Credit (RTA)")
+    slicer(p5, "s_dwelling", 16, 76, 220, 64, D, "Dwelling", default=DEFAULTS["season_dwelling"])
+    slicer(p5, "s_suburb", 248, 76, 260, 64, S, "Compare suburb", default=DEFAULTS["season_suburb"])
+    card(p5, "c_cheap", 524, 76, 230, 80, "Cheapest Quarter (QLD)", "Cheapest quarter (QLD)", font=20)
+    card(p5, "c_gap", 766, 76, 230, 80, "Peak to Cheapest (QLD)", "Peak vs cheapest quarter")
+    card(p5, "c_save", 1008, 76, 256, 80, "Yearly Saving (QLD)", "≈ a year at the QLD median")
+    p5.add("c_rent_season", "clusteredColumnChart", 16, 168, 620, 250,
+           title="Signed rent vs trend by quarter: Queensland vs suburb",
+           roles={"Category": [column("Seasonality", "quarter_label")],
+                  "Y": [measure("QLD Rent vs Trend"), measure("Suburb Rent vs Trend")]},
+           objects={"dataPoint": series_colours([("QLD Rent vs Trend", NEUTRAL), ("Suburb Rent vs Trend", SIGNED)])})
+    p5.add("c_bonds_season", "clusteredColumnChart", 16, 428, 620, 222,
+           title="New leases vs trend by quarter: the student intake",
+           roles={"Category": [column("Seasonality", "quarter_label")],
+                  "Y": [measure("QLD Leases vs Trend"), measure("Suburb Leases vs Trend")]},
+           objects={"dataPoint": series_colours([("QLD Leases vs Trend", NEUTRAL), ("Suburb Leases vs Trend", SIGNED)])})
+    card(p5, "c_change", 16, 654, 620, 30, "March Premium Change (QLD)", None, font=10, colour="#4B5563")
+    p5.add("b_surge", "clusteredBarChart", 652, 168, 612, 516,
+           title="March-quarter surge in new leases, QLD suburbs (all dwellings)",
+           roles={"Category": [S], "Y": [measure("March Lease Surge")]}, sort=(measure("March Lease Surge"), "Descending"),
+           objects={"dataPoint": [{"properties": {"fill": color(SIGNED)}}]})
+    p5.no_filter += [("s_suburb", "b_surge"), ("s_dwelling", "b_surge")]
+    return [p1, p2, p3, p4, p5]
 
 
 THEME = {

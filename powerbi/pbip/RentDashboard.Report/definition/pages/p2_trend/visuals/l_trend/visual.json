@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "l_trend",
   "position": {
     "x": 16,
@@ -27,8 +27,7 @@
                 }
               },
               "queryRef": "DimQuarter.quarter_label",
-              "nativeQueryRef": "quarter_label",
-              "active": true
+              "nativeQueryRef": "quarter_label"
             }
           ]
         },
@@ -69,6 +68,9 @@
     "objects": {
       "dataPoint": [
         {
+          "selector": {
+            "metadata": "_Measures.Signed Rent"
+          },
           "properties": {
             "fill": {
               "solid": {
@@ -81,12 +83,12 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Signed Rent"
           }
         },
         {
+          "selector": {
+            "metadata": "_Measures.QLD Median Rent"
+          },
           "properties": {
             "fill": {
               "solid": {
@@ -99,9 +101,6 @@
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.QLD Median Rent"
           }
         }
       ]

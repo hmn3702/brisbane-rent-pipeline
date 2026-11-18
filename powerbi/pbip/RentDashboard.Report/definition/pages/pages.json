@@ -4,7 +4,8 @@
     "p1_rising",
     "p2_trend",
     "p3_gap",
-    "p4_speed"
+    "p4_speed",
+    "p5_season"
   ],
   "activePageName": "p1_rising"
 }
