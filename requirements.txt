@@ -1,6 +1,10 @@
-requests>=2.31
-psycopg[binary]>=3.1
-python-dotenv>=1.0
-pytest>=8.0
-openpyxl>=3.1
-dbt-postgres>=1.9
+# Pinned to the versions CI tests. dbt-postgres declares dbt-core>=1.8.0rc1, and that "rc" lets pip
+# pick dbt-core betas (1.13.0b1 was being installed); pinning keeps every run on a stable release.
+requests==2.34.2
+psycopg[binary]==3.3.9
+python-dotenv==1.2.3
+pytest==9.1.1
+openpyxl==3.1.5
+dbt-core==1.12.7
+dbt-postgres==1.11.0
+dbt-adapters==1.24.6
