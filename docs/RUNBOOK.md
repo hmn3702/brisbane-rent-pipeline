@@ -98,3 +98,21 @@ Then follow [`powerbi/README.md`](../powerbi/README.md): Power Query (`power_que
 four report pages, and a table of expected values to check every measure against.
 The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same rule, and a dbt test
 (`assert_mix_adjusted_gap_matches_dax_rule`) keeps them in sync.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request, against a throwaway Postgres 16 service:
+
+1. `pytest` (API mocked; the database tests run against the service).
+2. `scripts/make_rta_fixture.py` builds a small **synthetic** workbook in the RTA layout. It has every tracked
+   suburb, plus the real file's quirks: a trailing space in a sheet name, `''` for suppressed cells, and a
+   duplicate suburb name. `ingest_rta.py` loads it, so CI never depends on the RTA website.
+3. `generate_fake_domain.py` with fixed dates, so the run is deterministic.
+4. `dbt build --fail-fast`: the seed, 8 models and 22 tests.
+5. `export_marts.py` as a smoke test.
+
+To reproduce CI locally, run the same commands against any empty Postgres database (see `ci.yml`).
+
+The scheduled `daily_ingest` and `quarterly_rta` workflows first check that the repository secrets
+(`DATABASE_URL`, and `DOMAIN_CLIENT_ID` for the daily job) exist. Until they do, the jobs skip with a
+notice instead of failing.

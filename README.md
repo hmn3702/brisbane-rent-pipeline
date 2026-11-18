@@ -1,5 +1,7 @@
 # Brisbane rents: what landlords ask vs what tenants sign
 
+[![ci](https://github.com/hmn3702/brisbane-rent-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/hmn3702/brisbane-rent-pipeline/actions/workflows/ci.yml)
+
 An end-to-end data project on the Brisbane rental market. Python pulls in the data, PostgreSQL stores it,
 dbt models and tests it, and a Power BI dashboard (kept as code) shows it.
 
@@ -47,7 +49,8 @@ flowchart LR
 | Transformation | dbt Core: 3 layers, 8 models, 22 data tests |
 | Testing | 9 pytest tests (API mocked, real-workbook checks) and 22 dbt schema and singular tests |
 | BI | Power BI Project (TMDL semantic model + PBIR report), generated from `powerbi/build_pbip.py` |
-| Orchestration | GitHub Actions cron jobs |
+| CI | GitHub Actions on every push: pytest, then the full pipeline (RTA parser → synthetic listings → `dbt build`) on a fresh Postgres |
+| Orchestration | GitHub Actions cron jobs (skip until secrets are configured) |
 
 ## Engineering decisions worth a look
 

@@ -4,7 +4,23 @@ on:
     - cron: "17 20 * * *"   # 06:17 Brisbane time (UTC+10)
   workflow_dispatch: {}
 jobs:
+  check-config:
+    # Skip cleanly (instead of failing every run) until the repository secrets are set.
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DOMAIN_CLIENT_ID: ${{ secrets.DOMAIN_CLIENT_ID }}
+        run: |
+          if [ -n "$DATABASE_URL" ] && [ -n "$DOMAIN_CLIENT_ID" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
+          else echo "ready=false" >> "$GITHUB_OUTPUT"; echo "::notice::Secrets not configured; skipping ingest."; fi
+
   ingest:
+    needs: check-config
+    if: needs.check-config.outputs.ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
