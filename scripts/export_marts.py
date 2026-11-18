@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -38,12 +39,13 @@ def select_sql(cur, table: str) -> str:
 
 
 def main() -> None:
-    from dotenv import load_dotenv
-    load_dotenv(ROOT / ".env")
+    sys.path.insert(0, str(ROOT))
+    from envconfig import database_url, load_env
+    load_env()
     OUT.mkdir(parents=True, exist_ok=True)
     manifest = {"exported_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "tables": {}}
 
-    with psycopg.connect(os.environ["DATABASE_URL"]) as conn, conn.cursor() as cur:
+    with psycopg.connect(database_url()) as conn, conn.cursor() as cur:
         for name in MARTS:
             path = OUT / f"{name}.csv"
             with path.open("wb") as f, cur.copy(

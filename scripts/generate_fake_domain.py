@@ -93,11 +93,15 @@ def main() -> None:
     ap.add_argument("--truncate", action="store_true", help="empty raw.domain_rent_listings first")
     args = ap.parse_args()
 
+    import sys
     import psycopg
     from psycopg.types.json import Jsonb
+    sys.path.insert(0, str(ROOT))
+    from envconfig import database_url, load_env
+    load_env()
 
     rows = generate(args.start, args.end)
-    with psycopg.connect(os.environ["DATABASE_URL"]) as conn, conn.cursor() as cur:
+    with psycopg.connect(database_url()) as conn, conn.cursor() as cur:
         if args.truncate:
             cur.execute("TRUNCATE raw.domain_rent_listings")
         cur.executemany(

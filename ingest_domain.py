@@ -26,7 +26,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests
-from dotenv import load_dotenv
+from envconfig import database_url, load_env
 
 TOKEN_URL = "https://auth.domain.com.au/v1/connect/token"
 SEARCH_URL = "https://api.domain.com.au/v1/listings/residential/_search"
@@ -215,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="load an earlier snapshot from data/raw without calling the API")
     args = parser.parse_args(argv)
 
-    load_dotenv(ROOT / ".env")
+    load_env()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     suburbs = load_suburbs()
 
@@ -231,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     log.info("snapshot %s: %d listings across %d suburbs", snapshot, len(rows), len(suburbs))
 
     if not args.skip_db:
-        n = load_to_postgres(os.environ["DATABASE_URL"], snapshot, rows)
+        n = load_to_postgres(database_url(), snapshot, rows)
         log.info("upserted %d rows into raw.domain_rent_listings", n)
     return 0
 

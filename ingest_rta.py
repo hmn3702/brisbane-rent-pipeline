@@ -281,11 +281,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown geo level in --geo {args.geo}")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(ROOT / ".env")
-    except ImportError:
-        pass
+    from envconfig import load_env, database_url
+    load_env()
 
     if args.download:
         download(args.file)
@@ -294,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     sha = file_sha256(args.file)
-    if args.if_changed and not args.skip_db and already_loaded(os.environ["DATABASE_URL"], sha, geo):
+    if args.if_changed and not args.skip_db and already_loaded(database_url(), sha, geo):
         log.info("workbook unchanged since last load (sha256 %s...); nothing to do", sha[:12])
         return 0
 
@@ -310,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
         write_csv(records, args.csv_out)
         log.info("wrote %s", args.csv_out)
     if not args.skip_db:
-        n = load_to_postgres(os.environ["DATABASE_URL"], records, args.file.name, sha=sha, geo=geo)
+        n = load_to_postgres(database_url(), records, args.file.name, sha=sha, geo=geo)
         log.info("loaded %d rows into raw.rta_bond_stats", n)
     return 0
 

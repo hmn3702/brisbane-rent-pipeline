@@ -29,7 +29,7 @@ def pg_env(url: str) -> dict[str, str]:
 
 
 def main() -> int:
-    env = pg_env(os.environ["DATABASE_URL"])
+    env = pg_env(os.environ.get("DATABASE_URL_UNPOOLED") or os.environ["DATABASE_URL"])
     if env["PGPASSWORD"]:
         print(f"::add-mask::{env['PGPASSWORD']}")
     target = os.environ.get("GITHUB_ENV")
