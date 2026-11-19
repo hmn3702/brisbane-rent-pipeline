@@ -5,6 +5,9 @@
 An end-to-end data project on the Brisbane rental market. Python pulls in the data, PostgreSQL stores it,
 dbt models and tests it, and a Power BI dashboard (kept as code) shows it.
 
+**[Live dashboard](https://hmn3702.github.io/brisbane-rent-pipeline/)**: pick a suburb and dwelling type; rebuilt
+daily by the pipeline from real RTA data only · **[dbt docs and lineage](https://hmn3702.github.io/brisbane-rent-pipeline/dbt/)**
+
 **The question:** Queensland's Residential Tenancies Authority (RTA) publishes the median rent of tenancies
 that were *actually signed*. But it only publishes quarterly, about a month after each quarter ends.
 Listing sites show what landlords are *asking* today. How far apart are those two numbers in each suburb,

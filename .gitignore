@@ -16,3 +16,4 @@ powerbi/pbip.zip
 .neon
 node_modules/
 dbt/.user.yml
+_site/

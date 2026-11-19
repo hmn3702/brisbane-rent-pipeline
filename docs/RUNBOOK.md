@@ -126,6 +126,18 @@ four report pages, and a table of expected values to check every measure against
 The mart's mix-adjusted gap and the Power BI `[Gap %]` measure follow the same rule, and a dbt test
 (`assert_mix_adjusted_gap_matches_dax_rule`) keeps them in sync.
 
+## Public dashboard (GitHub Pages)
+
+`web/index.html` is a self-contained page (plain SVG charts, no libraries). `scripts/build_site.py` turns the
+exported RTA marts into `_site/data.json` next to it; Domain data is never published, so the public page
+contains no demo data.
+
+- Preview locally: `python scripts/export_marts.py && python scripts/build_site.py && python -m http.server -d _site 8000`
+- Published by `pipeline.yml` after each daily run (and on any push that changes `web/` or `build_site.py`),
+  together with the static dbt docs at `/dbt/`. A step refuses to publish if the database host or
+  password appears anywhere in the site.
+- One-time setup: repository Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+
 ## Data quality: write-audit-publish
 
 `scripts/dbt_wap.sh` is how the pipeline runs dbt (locally, in Docker and on the schedule):

@@ -1,11 +1,15 @@
 name: pipeline
 # The whole pipeline, end to end, against the hosted database:
 #   RTA workbook (reloaded only when it changes) -> Domain snapshot (when API keys exist)
-#   -> dbt build -> mart export (artifact) -> database size check.
+#   -> dbt build -> mart export (artifact) -> public dashboard + dbt docs on GitHub Pages
+#   -> database size check.
 on:
   schedule:
     - cron: "17 20 * * *"   # 06:17 Brisbane (UTC+10), daily
   workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["web/**", "scripts/build_site.py"]   # redeploy the page when it changes
 
 concurrency:
   group: pipeline
@@ -77,6 +81,23 @@ jobs:
           path: powerbi/data/
           retention-days: 30
 
+      - name: Build the public dashboard and dbt docs
+        run: |
+          (cd dbt && dbt docs generate --static --profiles-dir .)
+          python scripts/build_site.py --dbt-docs dbt/target/static_index.html
+
+      - name: Check the site contains no connection details
+        run: |
+          pats=(); for v in "$PGHOST" "$PGPASSWORD"; do [ -n "$v" ] && pats+=(-e "$v"); done
+          if [ ${#pats[@]} -gt 0 ] && grep -rqF "${pats[@]}" _site; then
+            echo "::error::_site contains the database host or password; not publishing."; exit 1
+          fi
+          echo "ok: no host or password in _site ($(du -sh _site | cut -f1))"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
       - name: Database size and run summary
         run: |
           SIZE_MB=$(psql "$DATABASE_URL" -tAc "SELECT pg_database_size(current_database()) / 1024 / 1024")
@@ -91,3 +112,16 @@ jobs:
           if [ "$SIZE_MB" -gt "$SIZE_WARN_MB" ]; then
             echo "::warning::Database is ${SIZE_MB} MB, above ${SIZE_WARN_MB} MB. Trim old Domain snapshots or upgrade the plan."
           fi
+
+  deploy-site:
+    needs: run
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

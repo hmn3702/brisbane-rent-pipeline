@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queensland rents: what tenants actually sign</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Signed rents for new tenancies in Queensland suburbs, from RTA bond data. When is the cheapest time to sign a lease, and where are rents rising?">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6; --accent-wash: rgba(42,120,214,0.10); --context: #898781;
+    --hover-wash: rgba(11,11,11,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface-1: #1a1a19;
+      --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --accent: #3987e5; --accent-wash: rgba(57,135,229,0.14); --context: #898781;
+      --hover-wash: rgba(255,255,255,0.05);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text-primary);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 48px; }
+  header h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; font-weight: 600; }
+  header p { margin: 0; color: var(--text-secondary); }
+  header .links { margin-top: 8px; font-size: 14px; }
+  header .links a { margin-right: 14px; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin: 22px 0 18px; }
+  .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+  .filters select, .filters input { font: inherit; color: var(--text-primary); background: var(--surface-1);
+         border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 200px; }
+  .filters input { min-width: 240px; }
+  .filters .note { font-size: 13px; color: var(--text-muted); padding-bottom: 8px; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .grid { display: grid; gap: 16px; }
+  .tiles { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
+  .two { grid-template-columns: 1fr 1fr; margin: 16px 0; }
+  @media (max-width: 880px) { .tiles { grid-template-columns: 1fr 1fr; } .two { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .tiles { grid-template-columns: 1fr; } }
+
+  .tile .label { font-size: 13px; color: var(--text-secondary); }
+  .tile .value { font-size: 30px; font-weight: 600; line-height: 1.2; margin: 4px 0 2px; }
+  .tile.hero .value { font-size: 48px; }
+  .tile .sub { font-size: 13px; color: var(--text-secondary); }
+
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 2px; }
+  .cap { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin: 0 0 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+  .key-rect { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .chart { position: relative; width: 100%; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart svg text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+  .chart [tabindex]:focus { outline: none; }
+  .chart [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 24px 0; }
+
+  .tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+         border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+         white-space: nowrap; z-index: 5; display: none; }
+  .tip .t { color: var(--text-secondary); margin-bottom: 4px; }
+  .tip .row { display: flex; align-items: center; gap: 8px; }
+  .tip .row b { font-weight: 600; color: var(--text-primary); }
+  .tip .row span { color: var(--text-secondary); }
+
+  details { margin-top: 10px; font-size: 13px; }
+  details summary { cursor: pointer; color: var(--text-secondary); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  th[aria-sort] button::after { content: " ▾"; }
+  th[aria-sort="ascending"] button::after { content: " ▴"; }
+  tbody tr.pick { cursor: pointer; }
+  tbody tr.pick:hover { background: var(--hover-wash); }
+  tbody tr.sel td { font-weight: 600; }
+  .tablebar { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .tablebar input { font: inherit; color: var(--text-primary); background: var(--surface-1);
+         border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  .tablebar button { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; cursor: pointer; }
+  .prose { color: var(--text-secondary); font-size: 14px; }
+  .prose p { margin: 0 0 10px; }
+  footer { margin-top: 28px; font-size: 13px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Queensland rents: what tenants actually sign</h1>
+    <p>Median weekly rent of new tenancies, from bonds lodged with the Residential Tenancies Authority (RTA). <span id="span"></span></p>
+    <div class="links">
+      <a href="https://github.com/hmn3702/brisbane-rent-pipeline">Code and method on GitHub</a>
+      <a href="dbt/">Data model and lineage (dbt docs)</a>
+    </div>
+  </header>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label>Dwelling
+      <select id="f-dwelling"></select>
+    </label>
+    <label>Suburb
+      <input id="f-suburb" list="suburb-list" autocomplete="off" spellcheck="false">
+      <datalist id="suburb-list"></datalist>
+    </label>
+    <div class="note" id="f-note"></div>
+  </div>
+
+  <section class="grid tiles" aria-label="Headline figures">
+    <div class="card tile hero"><div class="label" id="t1-l"></div><div class="value" id="t1-v"></div><div class="sub" id="t1-s"></div></div>
+    <div class="card tile"><div class="label" id="t2-l"></div><div class="value" id="t2-v"></div><div class="sub" id="t2-s"></div></div>
+    <div class="card tile"><div class="label">Cheapest quarter to sign (Queensland)</div><div class="value" id="t3-v"></div><div class="sub" id="t3-s"></div></div>
+    <div class="card tile"><div class="label">Cheapest vs dearest quarter, per year</div><div class="value" id="t4-v"></div><div class="sub" id="t4-s"></div></div>
+  </section>
+
+  <section class="card">
+    <h2 id="c1-h"></h2>
+    <p class="cap">Median weekly rent of new bonds each quarter. Hover or use the arrow keys for values.</p>
+    <div class="legend" id="c1-legend"></div>
+    <div class="chart" id="c1"></div>
+    <details><summary>Table view</summary><div id="c1-table"></div></details>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Is there a cheaper time to sign?</h2>
+      <p class="cap" id="c2-cap"></p>
+      <div class="legend" id="c2-legend"></div>
+      <div class="chart" id="c2"></div>
+      <p class="cap" id="c2-note" style="margin-top:8px"></p>
+      <details><summary>Table view</summary><div id="c2-table"></div></details>
+    </section>
+    <section class="card">
+      <h2>March: the student intake</h2>
+      <p class="cap" id="c3-cap"></p>
+      <div class="chart" id="c3"></div>
+      <details><summary>Table view</summary><div id="c3-table"></div></details>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2 id="c4-h"></h2>
+    <p class="cap">Latest quarter, suburbs with 30 or more new bonds. Click a column to sort, or a row to select the suburb.</p>
+    <div class="tablebar">
+      <input id="c4-search" placeholder="Filter suburbs" aria-label="Filter suburbs">
+      <span class="cap" id="c4-count" style="margin:0"></span>
+      <button id="c4-more" type="button"></button>
+    </div>
+    <div style="overflow-x:auto"><table id="c4"></table></div>
+  </section>
+
+  <section class="card prose" style="margin-top:16px">
+    <h2 style="color:var(--text-primary)">How to read this</h2>
+    <p><b>Signed, not asked.</b> These are the rents on bonds actually lodged for new tenancies, not advertised prices. The RTA reports a median per suburb, dwelling type and quarter, and hides cells with too few bonds.</p>
+    <p><b>Seasonality.</b> Each quarter's rent is compared with a centred four-quarter moving average, which removes the long-run rise. The bars are the average of those differences across years. "Clear" means at least five years of data and a t-statistic of 2 or more. Suburb quarters with fewer than 10 new bonds are left out. Part of the March premium may be a location effect (more leases signed in dearer inner suburbs when semester starts) rather than every landlord charging more; bond data alone can't separate the two.</p>
+    <p><b>Compare like with like.</b> "All dwellings" mixes flats, houses and rooms. In student suburbs many new leases are "Other" dwellings, which can pull the headline median below that of a one-bedroom flat. Pick a dwelling type to compare suburbs fairly.</p>
+    <p><b>Coming next:</b> asking rents from Domain listings against what tenants sign, once Domain API access is approved.</p>
+  </section>
+
+  <footer>
+    <span id="foot"></span><br>
+    Source: Residential Tenancies Authority (Qld), rental bond data, CC BY 4.0. Built by Minh Nghia Ha.
+  </footer>
+</div>
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+const QLABEL = ["Mar qtr", "Jun qtr", "Sep qtr", "Dec qtr"];
+const S = { dw: "Flat 2", sub: "St Lucia", sortKey: "yoy", sortDir: -1, showAll: false, search: "" };
+let D = null;
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const money = v => v == null ? "–" : "$" + Math.round(v).toLocaleString("en-AU");
+const pct = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%";
+const pts = v => v == null ? "–" : Math.abs(v).toFixed(1) + " pts";
+const qtrLabel = q => { const [y, m] = q.split("-"); return ({ "03": "Mar", "06": "Jun", "09": "Sep", "12": "Dec" })[m] + " " + y; };
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent, x, y, s, attrs = {}) { const t = el("text", { x, y, ...attrs }, parent); t.textContent = s; return t; }
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+  const t = [], end = Math.ceil(hi / step - 1e-9) * step;   // last tick always covers the data
+  for (let v = Math.floor(lo / step + 1e-9) * step; v <= end + 1e-9; v += step) t.push(+v.toFixed(6));
+  return t;
+}
+// bar path: 4px rounded data-end, square at the baseline
+function barPath(x, y0, w, y1, horizontal = false) {
+  const r = 4;
+  if (!horizontal) {
+    const up = y1 < y0, h = Math.abs(y1 - y0), rr = Math.min(r, h, w / 2);
+    if (h < 0.5) return "";
+    return up
+      ? `M${x},${y0}V${y1 + rr}Q${x},${y1} ${x + rr},${y1}H${x + w - rr}Q${x + w},${y1} ${x + w},${y1 + rr}V${y0}Z`
+      : `M${x},${y0}V${y1 - rr}Q${x},${y1} ${x + rr},${y1}H${x + w - rr}Q${x + w},${y1} ${x + w},${y1 - rr}V${y0}Z`;
+  }
+  const len = y1 - x, rr = Math.min(r, len, w / 2);   // here: x = baseline x, y1 = end x, y0 = top y, w = thickness
+  if (len < 0.5) return "";
+  return `M${x},${y0}H${y1 - rr}Q${y1},${y0} ${y1},${y0 + rr}V${y0 + w - rr}Q${y1},${y0 + w} ${y1 - rr},${y0 + w}H${x}Z`;
+}
+const tip = $("tip");
+function showTip(host, title, rows, px, py) {
+  tip.replaceChildren();
+  const t = document.createElement("div"); t.className = "t"; t.textContent = title; tip.appendChild(t);
+  for (const r of rows) {
+    const row = document.createElement("div"); row.className = "row";
+    const k = document.createElement("i"); k.className = r.rect ? "key-rect" : "key-line"; k.style.background = r.color;
+    const b = document.createElement("b"); b.textContent = r.value;
+    const s = document.createElement("span"); s.textContent = r.name;
+    row.append(k, b, s); tip.appendChild(row);
+  }
+  const box = host.getBoundingClientRect();
+  tip.style.display = "block";
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = box.left + window.scrollX + px + 14, y = box.top + window.scrollY + py - th - 10;
+  if (x + tw > window.scrollX + document.documentElement.clientWidth - 8) x = box.left + window.scrollX + px - tw - 14;
+  if (y < window.scrollY + 4) y = box.top + window.scrollY + py + 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+function legend(id, items) {
+  const L = $(id); L.replaceChildren();
+  for (const it of items) {
+    const s = document.createElement("span"), k = document.createElement("i");
+    k.className = it.rect ? "key-rect" : "key-line"; k.style.background = it.color;
+    s.append(k, document.createTextNode(it.name)); L.appendChild(s);
+  }
+}
+function table(host, head, rows) {
+  const t = document.createElement("table"), th = document.createElement("thead"), tr = document.createElement("tr");
+  for (const h of head) { const c = document.createElement("th"); c.textContent = h; tr.appendChild(c); }
+  th.appendChild(tr); t.appendChild(th);
+  const tb = document.createElement("tbody");
+  for (const r of rows) { const row = document.createElement("tr"); for (const v of r) { const c = document.createElement("td"); c.textContent = v; row.appendChild(c); } tb.appendChild(row); }
+  t.appendChild(tb); $(host).replaceChildren(t);
+}
+
+// ---------- data access ----------
+const subIdx = () => D.suburbs.indexOf(S.sub);
+const qldSeries = () => D.qld[S.dw] || [];
+const subSeries = () => { const i = subIdx(); return i < 0 ? null : (D.rent[S.dw] || {})[i] || null; };
+function lastValid(a) { for (let i = a.length - 1; i >= 0; i--) if (a[i] != null) return [i, a[i]]; return [-1, null]; }
+function stateSeason() { return D.season_state[S.dw] || [null, null, null, null]; }
+function subSeason() { const i = subIdx(); return i < 0 ? null : (D.season_suburb[S.dw] || {})[i] || null; }
+
+// ---------- tiles ----------
+function renderTiles() {
+  const q = qldSeries(), [li, lv] = lastValid(q), prev = li >= 4 ? q[li - 4] : null;
+  $("t1-l").textContent = `Queensland median, ${S.dw}`;
+  $("t1-v").textContent = lv == null ? "–" : money(lv);
+  $("t1-s").textContent = lv == null ? "" : `a week · ${prev ? pct(100 * (lv / prev - 1)) + " vs a year earlier" : ""}`;
+  const s = subSeries(), [si, sv] = s ? lastValid(s) : [-1, null];
+  $("t2-l").textContent = `${S.sub || "Suburb"} median, ${S.dw}`;
+  $("t2-v").textContent = sv == null ? "–" : money(sv);
+  $("t2-s").textContent = sv == null ? "No reported median for this dwelling type"
+    : `${q[si] ? pct(100 * (sv / q[si] - 1)) + " vs Queensland" : ""}${si !== li ? " · as at " + qtrLabel(D.quarters[si]) : ""}`;
+  const st = stateSeason().map((r, k) => r && r[0] != null ? { k, dev: r[0], sig: r[2] } : null).filter(Boolean);
+  if (st.length < 2) { $("t3-v").textContent = "–"; $("t3-s").textContent = "Not enough data"; $("t4-v").textContent = "–"; $("t4-s").textContent = ""; return; }
+  const lo = st.reduce((a, b) => b.dev < a.dev ? b : a), hi = st.reduce((a, b) => b.dev > a.dev ? b : a), gap = hi.dev - lo.dev;
+  $("t3-v").textContent = QLABEL[lo.k];
+  $("t3-s").textContent = `${pts(gap)} below the dearest (${QLABEL[hi.k]})${lo.sig ? "" : " · not statistically clear"}`;
+  $("t4-v").textContent = lv == null ? "–" : "≈ " + money(gap / 100 * lv * 52);
+  $("t4-s").textContent = "at the Queensland median · an average, not a guarantee";
+}
+
+// ---------- chart 1: line, suburb vs QLD ----------
+function renderLine() {
+  const host = $("c1"); host.replaceChildren();
+  $("c1-h").textContent = `Signed rent over time: ${S.sub || "suburb"} vs Queensland, ${S.dw}`;
+  const q = qldSeries(), s = subSeries(), A = css("--accent"), C = css("--context");
+  const series = [{ name: "Queensland", color: C, v: q }];
+  if (s) series.push({ name: S.sub, color: A, v: s });
+  legend("c1-legend", series.slice().reverse().map(x => ({ name: x.name, color: x.color })));
+  const vals = series.flatMap(x => x.v).filter(v => v != null);
+  if (!vals.length) { host.innerHTML = '<div class="empty">No data for this dwelling type.</div>'; return; }
+  const W = host.clientWidth || 800, H = 300, m = { t: 12, r: 64, b: 28, l: 52 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
+    "aria-label": `Line chart of median weekly rent, ${series.map(x => x.name).join(" and ")}` }, host);
+  const n = D.quarters.length, x = i => m.l + (W - m.l - m.r) * i / (n - 1);
+  const ticks = niceTicks(Math.min(...vals) * 0.95, Math.max(...vals) * 1.03, 5);
+  const y0 = ticks[0], y1 = ticks[ticks.length - 1], y = v => m.t + (H - m.t - m.b) * (1 - (v - y0) / (y1 - y0));
+  for (const t of ticks) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === y0 ? css("--axis") : css("--grid"), "stroke-width": 1 }, svg);
+    txt(svg, m.l - 8, y(t) + 4, money(t), { "text-anchor": "end", fill: css("--text-muted") });
+  }
+  D.quarters.forEach((qq, i) => { if (qq.endsWith("-09-30") && i % 1 === 0 && (+qq.slice(0, 4)) % 2 === 1)
+    txt(svg, x(i), H - 8, qq.slice(0, 4), { "text-anchor": "middle", fill: css("--text-muted") }); });
+  for (const sr of series) {
+    let d = "", pen = false;
+    sr.v.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + x(i) + "," + y(v); pen = true; });
+    el("path", { d, fill: "none", stroke: sr.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    const [li, lv] = lastValid(sr.v);
+    if (li >= 0) {
+      el("circle", { cx: x(li), cy: y(lv), r: 4, fill: sr.color, stroke: css("--surface-1"), "stroke-width": 2 }, svg);
+      sr.endY = y(lv); sr.endX = x(li); sr.endV = lv;
+    }
+  }
+  // end labels; when they would collide, keep only the emphasised series' label
+  const ends = series.filter(sr => sr.endV != null);
+  const collide = ends.length === 2 && Math.abs(ends[0].endY - ends[1].endY) < 16;
+  for (const sr of (collide ? ends.slice(-1) : ends))
+    txt(svg, sr.endX + 8, sr.endY + 4, money(sr.endV), { fill: css("--text-primary"), "font-weight": 600 });
+  // crosshair + tooltip
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" }, svg);
+  const hit = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent", tabindex: 0,
+    "aria-label": "Rent over time. Use left and right arrow keys to read each quarter." }, svg);
+  let cur = n - 1;
+  const show = (i, px, py) => {
+    cur = Math.max(0, Math.min(n - 1, i)); cross.setAttribute("x1", x(cur)); cross.setAttribute("x2", x(cur)); cross.setAttribute("visibility", "visible");
+    showTip(host, qtrLabel(D.quarters[cur]), series.slice().reverse().map(sr => ({ name: sr.name, color: sr.color, value: money(sr.v[cur]) })),
+      px ?? x(cur), py ?? m.t + 20);
+  };
+  const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+  hit.addEventListener("pointermove", e => { const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    show(Math.round((px - m.l) / (W - m.l - m.r) * (n - 1)), (e.clientX - r.left), (e.clientY - r.top)); });
+  hit.addEventListener("pointerleave", hide); hit.addEventListener("blur", hide);
+  hit.addEventListener("focus", () => show(cur));
+  hit.addEventListener("keydown", e => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); show(cur + (e.key === "ArrowLeft" ? -1 : 1)); } });
+  table("c1-table", ["Quarter", ...series.map(sr => sr.name)],
+    D.quarters.map((qq, i) => [qtrLabel(qq), ...series.map(sr => money(sr.v[i]))]).filter(r => r.slice(1).some(v => v !== "–")).reverse());
+}
+
+// ---------- chart 2: seasonality columns ----------
+function renderSeason() {
+  const host = $("c2"); host.replaceChildren();
+  const st = stateSeason(), ss = subSeason(), A = css("--accent"), C = css("--context");
+  const hasSub = ss && ss.some(r => r && r[0] != null);
+  $("c2-cap").textContent = `Signed rent vs its trend, average for each quarter of the year, ${S.dw}. Hover a bar for its value.`;
+  const series = [{ name: "Queensland", color: C, v: st.map(r => r ? r[0] : null), r: st }];
+  if (hasSub) series.push({ name: S.sub, color: A, v: ss.map(r => r ? r[0] : null), r: ss });
+  legend("c2-legend", series.map(s => ({ name: s.name, color: s.color, rect: true })));
+  $("c2-note").textContent = hasSub ? "" : `Not enough leases in ${S.sub || "this suburb"} for ${S.dw} to measure a seasonal pattern; showing Queensland only.`;
+  const vals = series.flatMap(s => s.v).filter(v => v != null);
+  if (!vals.length) { host.innerHTML = '<div class="empty">No seasonal data for this dwelling type.</div>'; return; }
+  const W = host.clientWidth || 500, H = 260, m = { t: 22, r: 8, b: 28, l: 44 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Column chart of rent versus trend by quarter" }, host);
+  const lim = Math.max(1, ...vals.map(Math.abs)) * 1.15, ticks = niceTicks(-lim, lim, 4);
+  const lo = ticks[0], hi = ticks[ticks.length - 1], y = v => m.t + (H - m.t - m.b) * (1 - (v - lo) / (hi - lo));
+  for (const t of ticks) {
+    el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? css("--axis") : css("--grid"), "stroke-width": 1 }, svg);
+    txt(svg, m.l - 8, y(t) + 4, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t) + "%", { "text-anchor": "end", fill: css("--text-muted") });
+  }
+  const band = (W - m.l - m.r) / 4, bw = Math.min(24, band / (series.length + 1.5)), gap = 2;
+  for (let k = 0; k < 4; k++) {
+    const groupW = series.length * bw + (series.length - 1) * gap, gx = m.l + band * k + (band - groupW) / 2;
+    txt(svg, m.l + band * k + band / 2, H - 8, QLABEL[k], { "text-anchor": "middle", fill: css("--text-secondary") });
+    series.forEach((s, j) => {
+      const v = s.v[k]; if (v == null) return;
+      const bx = gx + j * (bw + gap), p = el("path", { d: barPath(bx, y(0), bw, y(v)), fill: s.color, tabindex: 0 }, svg);
+      const r = s.r[k], label = `${pct(v, 1)} vs trend`;
+      p.setAttribute("aria-label", `${s.name}, ${QLABEL[k]}: ${label}`);
+      const on = e => { p.setAttribute("opacity", 0.8); const b = svg.getBoundingClientRect();
+        showTip(host, `${QLABEL[k]} · ${s.name}`, [{ name: "vs trend", color: s.color, rect: true, value: pct(v, 1) },
+          { name: `${r[5]} years · ${r[2] ? "clear" : "not clear"} (t ${r[1]})`, color: "transparent", value: "" }],
+          e && e.clientX ? e.clientX - b.left : bx * b.width / W, e && e.clientY ? e.clientY - b.top : y(v) * b.height / H); };
+      const off = () => { p.removeAttribute("opacity"); hideTip(); };
+      p.addEventListener("pointermove", on); p.addEventListener("pointerleave", off); p.addEventListener("focus", () => on()); p.addEventListener("blur", off);
+    });
+  }
+  table("c2-table", ["Quarter", ...series.flatMap(s => [s.name + " vs trend", s.name + " clear?"])],
+    QLABEL.map((ql, k) => [ql, ...series.flatMap(s => [pct(s.v[k], 2), s.r[k] ? (s.r[k][2] ? "yes" : "no") : "–"])]));
+}
+
+// ---------- chart 3: March surge in new leases ----------
+function renderSurge() {
+  const host = $("c3"); host.replaceChildren();
+  const subs = D.season_suburb[S.dw] || {}, rows = [];
+  for (const [i, qs] of Object.entries(subs)) {
+    const r = qs[0]; if (!r || r[3] == null || r[4] < 40 || r[6] < 6) continue;
+    rows.push({ i: +i, name: D.suburbs[+i], v: r[3], n: r[4] });
+  }
+  rows.sort((a, b) => b.v - a.v);
+  const top = rows.slice(0, 15), A = css("--accent");
+  $("c3-cap").textContent = `New leases in the March quarter vs trend, ${S.dw}. Top 15 of ${rows.length} suburbs with 40+ new bonds a quarter and 6+ years of data. Click a bar to select the suburb.`;
+  if (!top.length) { host.innerHTML = '<div class="empty">Not enough suburbs with data for this dwelling type.</div>'; table("c3-table", ["Suburb", "March vs trend"], []); return; }
+  const rowH = 22, bh = 14, W = host.clientWidth || 500, m = { t: 4, r: 56, b: 4, l: 150 }, H = m.t + m.b + rowH * top.length;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Bar chart of the March-quarter surge in new leases by suburb" }, host);
+  const max = Math.max(...top.map(r => r.v), 1), x = v => m.l + (W - m.l - m.r) * Math.max(0, v) / max;
+  el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: css("--axis"), "stroke-width": 1 }, svg);
+  top.forEach((r, k) => {
+    const yy = m.t + k * rowH + (rowH - bh) / 2, sel = r.name === S.sub;
+    txt(svg, m.l - 8, yy + bh - 3, r.name, { "text-anchor": "end", fill: sel ? css("--text-primary") : css("--text-secondary"), "font-weight": sel ? 600 : 400 });
+    const g = el("g", { tabindex: 0, style: "cursor:pointer", "aria-label": `${r.name}: ${pct(r.v, 0)} more new leases in March than trend` }, svg);
+    el("rect", { x: 0, y: m.t + k * rowH, width: W, height: rowH, fill: "transparent" }, g);
+    const p = el("path", { d: barPath(m.l, yy, bh, x(r.v), true), fill: A }, g);
+    txt(g, x(r.v) + 6, yy + bh - 3, pct(r.v, 0), { fill: css("--text-primary") });
+    const on = e => { p.setAttribute("opacity", 0.8); const b = svg.getBoundingClientRect();
+      showTip(host, r.name, [{ name: "new leases vs trend, March qtr", color: A, rect: true, value: pct(r.v, 1) },
+        { name: `about ${r.n.toLocaleString("en-AU")} new bonds a quarter`, color: "transparent", value: "" }],
+        e && e.clientX ? e.clientX - b.left : x(r.v) * b.width / W, e && e.clientY ? e.clientY - b.top : yy * b.height / H); };
+    const off = () => { p.removeAttribute("opacity"); hideTip(); };
+    g.addEventListener("pointermove", on); g.addEventListener("pointerleave", off); g.addEventListener("focus", () => on()); g.addEventListener("blur", off);
+    g.addEventListener("click", () => select(r.name)); g.addEventListener("keydown", e => { if (e.key === "Enter") select(r.name); });
+  });
+  table("c3-table", ["Suburb", "March vs trend", "New bonds a quarter"], rows.map(r => [r.name, pct(r.v, 1), r.n.toLocaleString("en-AU")]));
+}
+
+// ---------- league table ----------
+const COLS = [["name", "Suburb"], ["rent", "Median rent"], ["yoy", "1-year change"], ["y5", "5-year change"], ["bonds", "New bonds"], ["rank", "QLD rank"]];
+function renderLeague() {
+  $("c4-h").textContent = `Suburb league table, ${S.dw}`;
+  const all = (D.latest[S.dw] || []).filter(r => r[4] != null && r[4] >= 30)
+    .map(r => ({ name: D.suburbs[r[0]], rent: r[1], yoy: r[2], y5: r[3], bonds: r[4], rank: r[5] }));
+  const f = S.search.trim().toLowerCase(), rows = all.filter(r => !f || r.name.toLowerCase().includes(f));
+  const k = S.sortKey, dir = S.sortDir;
+  rows.sort((a, b) => (a[k] == null) - (b[k] == null) || (k === "name" ? a.name.localeCompare(b.name) : a[k] - b[k]) * dir);
+  const shown = S.showAll ? rows : rows.slice(0, 25);
+  $("c4-count").textContent = `${shown.length} of ${rows.length} suburbs`;
+  $("c4-more").textContent = rows.length > 25 ? (S.showAll ? "Show top 25" : "Show all") : "";
+  const t = $("c4"); t.replaceChildren();
+  const th = document.createElement("thead"), hr = document.createElement("tr");
+  for (const [key, label] of COLS) {
+    const c = document.createElement("th"), b = document.createElement("button"); b.type = "button"; b.textContent = label;
+    if (key === k) c.setAttribute("aria-sort", dir > 0 ? "ascending" : "descending");
+    b.addEventListener("click", () => { if (S.sortKey === key) S.sortDir *= -1; else { S.sortKey = key; S.sortDir = key === "name" || key === "rank" ? 1 : -1; } renderLeague(); });
+    c.appendChild(b); hr.appendChild(c);
+  }
+  th.appendChild(hr); t.appendChild(th);
+  const tb = document.createElement("tbody");
+  for (const r of shown) {
+    const tr = document.createElement("tr"); tr.className = "pick" + (r.name === S.sub ? " sel" : ""); tr.tabIndex = 0;
+    for (const v of [r.name, money(r.rent), pct(r.yoy), pct(r.y5), r.bonds.toLocaleString("en-AU"), r.rank ?? "–"]) {
+      const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+    }
+    tr.addEventListener("click", () => { select(r.name); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    tr.addEventListener("keydown", e => { if (e.key === "Enter") select(r.name); });
+    tb.appendChild(tr);
+  }
+  t.appendChild(tb);
+}
+
+// ---------- state ----------
+function select(name) { if (D.suburbs.includes(name)) { S.sub = name; $("f-suburb").value = name; renderAll(); } }
+function writeHash() { history.replaceState(null, "", "#" + new URLSearchParams({ d: S.dw, s: S.sub }).toString()); }
+function readHash() { const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get("d") && D.dwellings.includes(p.get("d"))) S.dw = p.get("d");
+  if (p.get("s") && D.suburbs.includes(p.get("s"))) S.sub = p.get("s"); }
+function renderAll() {
+  writeHash(); hideTip();
+  renderTiles(); renderLine(); renderSeason(); renderSurge(); renderLeague();
+}
+
+fetch("data.json").then(r => r.json()).then(data => {
+  D = data; readHash();
+  const sel = $("f-dwelling");
+  for (const d of D.dwellings) { const o = document.createElement("option"); o.value = o.textContent = d; sel.appendChild(o); }
+  sel.value = S.dw;
+  sel.addEventListener("change", () => { S.dw = sel.value; renderAll(); });
+  const dl = $("suburb-list"); for (const n of D.suburbs) { const o = document.createElement("option"); o.value = n; dl.appendChild(o); }
+  const inp = $("f-suburb"); inp.value = S.sub;
+  inp.addEventListener("change", () => { if (D.suburbs.includes(inp.value)) select(inp.value); else inp.value = S.sub; });
+  $("c4-search").addEventListener("input", e => { S.search = e.target.value; renderLeague(); });
+  $("c4-more").addEventListener("click", () => { S.showAll = !S.showAll; renderLeague(); });
+  $("f-note").textContent = "Filters apply to every chart below.";
+  $("span").textContent = `Suburbs ${qtrLabel(D.quarters[0])} – ${qtrLabel(D.meta.latest_quarter)}.`;
+  $("foot").textContent = `RTA data to ${qtrLabel(D.meta.latest_quarter)} · page rebuilt ${new Date(D.meta.exported_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })} by the daily pipeline.`;
+  renderAll();
+  let w = innerWidth; addEventListener("resize", () => { if (Math.abs(innerWidth - w) > 20) { w = innerWidth; renderLine(); renderSeason(); renderSurge(); } });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+}).catch(err => { document.querySelector(".wrap").insertAdjacentHTML("beforeend", '<p class="empty">Could not load data.json.</p>'); console.error(err); });
+</script>
+</body>
+</html>
