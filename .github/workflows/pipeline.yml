@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ["web/**", "scripts/build_site.py"]   # redeploy the page when it changes
+    paths: ["web/**", "scripts/build_site.py", "dbt/**"]   # redeploy the page / dbt docs when they change
 
 concurrency:
   group: pipeline
